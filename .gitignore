@@ -1,0 +1,11 @@
+.env
+.Ds_Store
+.vscode/
+logs/
+*.log
+*.zip
+todo
+etc/
+node_modules/
+config.json
+

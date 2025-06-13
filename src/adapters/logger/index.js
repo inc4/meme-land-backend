@@ -1,0 +1,1 @@
+export { WinstonLoggerAdapter } from './winston-logger.js';

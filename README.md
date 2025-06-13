@@ -15,7 +15,7 @@
 
   Admin wallet has to be added to user pool.
 
-- Set up env var ADMIN_WALLET
+- Set up env var ADMIN_WALLET(admin wallet addresses separated by space, see [example.env](./example.env))
 - run script: ```npm run register-admin```
 
 ## start api server

@@ -40,6 +40,11 @@ app.use((req, res, next) => {
   logger.debug(`${req.method} ${req.path}`, req.requestOpts);
   next();
 });
+
+app.get('/health', (req, res) => {
+  res.status(200).json({ status: 'ok' });
+});
+
 app.use(cors(config.CORS.defaultCorsOptions));
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());

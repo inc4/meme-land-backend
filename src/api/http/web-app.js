@@ -12,6 +12,8 @@ import { HttpErrorBody, RequestInputsParser, DataPageComposer } from '../../libs
 
 import config from '../../../config/index.js';
 
+import { SwaggerController } from '../../../doc/index.js';
+
 // init components
 const app = express();
 const router = new express.Router();
@@ -22,6 +24,8 @@ mongoose.connect(config.mongo.url, config.mongo.options);
 const presaleContract = new PresaleContract();
 const walletService = new WalletService(walletModel, presaleContract);
 const walletController = new WalletController(walletService, HttpErrorBody.compose);
+
+const swaggerController = new SwaggerController();
 
 const auth = new Authentication(HttpErrorBody.compose);
 
@@ -40,8 +44,12 @@ app.use(cors(config.CORS.defaultCorsOptions));
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
+
+// register swagger controllers
+swaggerController.registerRoutes(router);
+
 // add auth
-app.use(auth.retrieveRequesterWallet.bind(auth));
+router.use(auth.retrieveRequesterWallet.bind(auth));
 
 
 // register wallet controllers

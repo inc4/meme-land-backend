@@ -9,6 +9,7 @@ const config = {};
 // server
 config.server = {
   port: env.SERVER_PORT,
+  url: env.SERVER_URL
 };
 
 config.CORS = {

@@ -59,3 +59,41 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           platforms: linux/amd64,linux/arm64
+
+  update-on-server:
+    runs-on: ubuntu-latest
+    needs: build-and-push
+
+    outputs:
+      image_tag: ${{ needs.build-and-push.outputs.image_tag }}
+
+    steps:
+      - name: Add ssh key
+        run: |
+          install -m 600 -D /dev/null ~/.ssh/id_rsa
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+
+      - name: Update server with new image
+        run: |
+          echo "Updating server with new Docker image..."
+
+          ssh-keyscan -H 35.158.146.88 >> ~/.ssh/known_hosts
+          ssh ec2-user@35.158.146.88 -i ~/.ssh/id_rsa "aws ecr get-login-password --region eu-central-1 | docker login --username AWS --password-stdin ${{ env.ECR_REGISTRY }}"
+          ssh ec2-user@35.158.146.88 -i ~/.ssh/id_rsa "docker pull ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:${{ steps.meta.outputs.tags }}"
+          ssh ec2-user@35.158.146.88 -i ~/.ssh/id_rsa "docker pull ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:${{ steps.meta.outputs.tags }}"
+
+          ssh ec2-user@35.158.146.88 -i ~/.ssh/id_rsa "docker-compose down backend && docker-compose up -d backend"
+
+          # Health check
+          for i in {1..10}; do
+            status=$(ssh ec2-user@35.158.146.88 -i ~/.ssh/id_rsa "curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8877/api/1.0.0/swagger/")
+            if [ "$status" -eq 200 ]; then
+              echo "Backend is up and running!"
+              exit 0
+            else
+              echo "Waiting for backend to be ready... (attempt $i)"
+              sleep 10
+            fi
+          done
+          echo "Backend did not start successfully after 10 attempts."
+          exit 1

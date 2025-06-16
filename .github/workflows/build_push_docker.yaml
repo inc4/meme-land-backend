@@ -15,8 +15,6 @@ env:
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
-    outputs:
-      image_tag: ${{ steps.meta.outputs.tags }}
 
     steps:
       - name: Checkout code
@@ -66,9 +64,6 @@ jobs:
     runs-on: ubuntu-latest
     needs: build-and-push
 
-    outputs:
-      image_tag: ${{ needs.build-and-push.outputs.image_tag }}
-
     steps:
       - name: Add ssh key
         run: |
@@ -81,7 +76,7 @@ jobs:
 
           ssh-keyscan -H 35.158.146.88 >> ~/.ssh/known_hosts
           ssh ec2-user@35.158.146.88 -i ~/.ssh/id_rsa "aws ecr get-login-password --region eu-central-1 | docker login --username AWS --password-stdin ${{ env.ECR_REGISTRY }}"
-          ssh ec2-user@35.158.146.88 -i ~/.ssh/id_rsa "docker pull ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:${{ steps.meta.outputs.tags }}"
+          ssh ec2-user@35.158.146.88 -i ~/.ssh/id_rsa "docker pull ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:${{ github.ref_name }}"
 
           ssh ec2-user@35.158.146.88 -i ~/.ssh/id_rsa "docker-compose down backend && docker-compose up -d backend"
 

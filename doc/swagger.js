@@ -107,9 +107,8 @@ const swaggerDefinition = {
 
 const options = {
   swaggerDefinition,
-  apis: ['./src/controllers/wallet.js'],
+  apis: ['./src/controllers/wallet.js', './src/controllers/campaign.js'],
 };
-
 
 
 export class SwaggerController {

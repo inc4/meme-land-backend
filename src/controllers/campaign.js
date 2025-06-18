@@ -215,22 +215,24 @@
 export class CampaignController {
   #campaignService;
   #composeError;
+  #parseConditions;
 
-  constructor(campaignService, errorComposer) {
+  constructor(campaignService, errorComposer, conditionsParser) {
     this.#campaignService = campaignService;
     this.#composeError = errorComposer;
+    this.#parseConditions = conditionsParser;
   }
 
   registerRoutes(router) {
-    router.post('/campaign', this.addCampaign.bind(this));
-    router.get('/campaign/:campaignId', this.getSingleByCampaignId.bind(this));
-    router.put('/campaign/:campaignId', this.updateCampaign.bind(this));
-    // TODO: router.get('campaign', th)
+    router.post('/campaigns', this.addCampaign.bind(this));
+    router.get('/campaigns/:campaignId', this.getSingleByCampaignId.bind(this));
+    router.get('/campaigns', this.get.bind(this));
+    router.put('/campaigns/:campaignId', this.updateCampaign.bind(this));
   }
 
   /**
    * @openapi
-   * /campaign:
+   * /campaigns:
    *   post:
    *     summary: Create new campaign and its underlying SPL token
    *     requestBody:
@@ -284,7 +286,7 @@ export class CampaignController {
 
   /**
    * @openapi
-   * /campaign/{campaignId}:
+   * /campaigns/{campaignId}:
    *   get:
    *     summary: Get campaign details by ID
    *     parameters:
@@ -324,12 +326,61 @@ export class CampaignController {
       res.status(500).send(this.#composeError(500, err.message));
       return next(err);
     }
+  }
 
+/**
+   * @openapi
+   * /campaigns:
+   *   get:
+   *     summary: get campaigns info paginated data
+   *     parameters:
+   *      - name: conditions
+   *        in: query
+   *        description: stringified and encoded query conditions, according to Campaign schema, encodeURIComponent(JSON.stringify(conditions) 
+   *        schema:
+   *         type: string
+   *      - name: page
+   *        in: query
+   *        description: data page number starts from 0
+   *        schema:
+   *          type: number
+   *      - name: limit
+   *        in: query
+   *        description: data page size
+   *        schema:
+   *          type: number
+   *     responses:
+   *       200:
+   *         description: Specified by conditions, page and limit, data page with campaign info list
+   *         content:
+   *          application/json:
+   *            schema:
+   *              $ref: "#/components/schemas/CampaignOutput"  
+   *       500:
+   *         $ref: "#/components/responses/InternalServerError"
+   */
+  async get(req, res, next) {
+    try {
+      // FIXME: how to authorize ????
+      // if (req.auth.requester) {
+      // check is admin ???
+      //   return res.status(401).send(this.#composeError(401, 'Unauthorized'));
+      // }
+      const dataPage = await this.#campaignService.get(
+        this.#parseConditions(req.query.conditions),
+        req.query.page,
+        req.query.limit
+      );
+      return res.status(200).send(dataPage);
+    } catch (err) {
+      res.status(500).send(this.#composeError(500, err.message));
+      return next(err);
+    }
   }
 
   /**
     * @openapi
-    * /campaign/{campaignId}:
+    * /campaigns/{campaignId}:
     *   put:
     *     summary: Update existing campaign
     *     parameters:

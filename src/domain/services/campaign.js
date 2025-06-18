@@ -5,10 +5,12 @@ import { v4 as uuidv4 } from 'uuid';
 export class CampaignService {
   #dataModel;
   #presaleContract;
+  #composeDataPage;
 
-  constructor(dataModel, presaleContract) {
+  constructor(dataModel, presaleContract, pageDataComposer) {
     this.#dataModel = dataModel;
     this.#presaleContract = presaleContract;
+    this.#composeDataPage = pageDataComposer;
   }
 
   async addCampaign(data) {
@@ -67,6 +69,15 @@ export class CampaignService {
     } catch (err) {
       throw err
     }
+  }
+
+  async get(conditions, page = 0, limit = 10) {
+    const result = await this.#dataModel.paginate(conditions, {
+      page: page + 1, // paginate use 1 as first page
+      limit,
+      sort: { createdAt: -1 },// -1(DESC) | 1(ASC)
+    });
+    return this.#composeDataPage(result);
   }
 
 }

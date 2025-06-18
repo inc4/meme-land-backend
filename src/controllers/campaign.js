@@ -56,6 +56,7 @@
  *               header:
  *                 type: string
  *               text:
+ *                 description: HTML or Markdown formatted text. ⚠️ MAX size of string is 16 MB.
  *                 type: string
  *         coverImage:
  *           type: string

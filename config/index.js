@@ -56,5 +56,7 @@ if (env.MONGODB_USER && env.MONGODB_PASS) {
   config.mongo.options.pass = env.MONGODB_PASS;
 }
 
+config.change_campaign_status_interval = 24 * 60 * 60 * 1000; // 24 hours
+
 
 export default config;

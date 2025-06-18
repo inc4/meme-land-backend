@@ -58,17 +58,13 @@ export class CampaignService {
     try {
       await this.#presaleContract.createToken(data);
     } catch (err) {
-      throw err;
+      return false;
     }
     return true;
   }
 
   async getSingleByCampaignId(campaignId) {
-    try {
       return await this.#dataModel.findOne({ campaignId });
-    } catch (err) {
-      throw err
-    }
   }
 
   async get(conditions, page = 0, limit = 10) {

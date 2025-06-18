@@ -1,4 +1,5 @@
 import * as mongoose from "mongoose";
+import mongoosePaginate from 'mongoose-paginate-v2';
 
 const walletSchema = new mongoose.Schema({
   referrer: {
@@ -27,5 +28,7 @@ const walletSchema = new mongoose.Schema({
     default: Date.now,
   },
 });
+
+walletSchema.plugin(mongoosePaginate);
 
 export const walletModel = mongoose.model('Wallet', walletSchema);

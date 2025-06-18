@@ -23,8 +23,8 @@ const logger = new WinstonLoggerAdapter(winston, config.logger);
 mongoose.connect(config.mongo.url, config.mongo.options);
 
 const presaleContract = new PresaleContract();
-const walletService = new WalletService(walletModel, presaleContract);
-const walletController = new WalletController(walletService, HttpErrorBody.compose);
+const walletService = new WalletService(walletModel, presaleContract, DataPageComposer.composePageInfo);
+const walletController = new WalletController(walletService, HttpErrorBody.compose, RequestInputsParser.parseRequestQueryParam);
 const campaignService = new CampaignService(campaignModel, presaleContract)
 const campaignController = new CampaignController(campaignService, HttpErrorBody.compose)
 

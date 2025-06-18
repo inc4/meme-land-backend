@@ -32,6 +32,19 @@
  *           type: string
  *           format: date-time
  *           example: "2025-06-12T12:34:56.789Z"
+ *     SafeWalletOutput:
+ *       type: object
+ *       properties:
+ *         referrer:
+ *           type: string
+ *           example: A86EzVnP4VnHUKoK1w2DkZ1pYN17U7751YTMNEyGmEmp
+ *         wallet:
+ *           type: string
+ *           example: A86EzVnP4VnHUKoK1w2DkZ1pYN17U7751YTMNEyGmEmp
+ *         createdAt:
+ *           type: string
+ *           format: date-time
+ *           example: "2025-06-12T12:34:56.789Z"
  *     InviteCode:
  *       type: object
  *       properties:
@@ -42,17 +55,19 @@
 export class WalletController {
   #service;
   #composeError;
+  #parseConditions;
 
-  constructor(service, errorComposer) {
+  constructor(service, errorComposer, conditionsParser) {
     this.#service = service;
     this.#composeError = errorComposer;
+    this.#parseConditions = conditionsParser;
   }
 
 
   registerRoutes(router) {
     router.post('/wallets', this.addSingle.bind(this));
-    //FIXME:  router.get('/wallets/count', this.addSingle.bind(this)); ????????????
     router.get('/wallets/:walletId', this.getSingle.bind(this));
+    router.get('/wallets/', this.get.bind(this));
     router.put('/wallets/:walletId/invite-code', this.updateInviteCode.bind(this));
   }
 
@@ -139,6 +154,57 @@ export class WalletController {
   }
 
 
+  /**
+   * @openapi
+   * /wallets:
+   *   get:
+   *     summary: get wallets safe info paginated data
+   *     parameters:
+   *      - name: conditions
+   *        in: query
+   *        description: stringified and encoded query conditions, according to Account schema, encodeURIComponent(JSON.stringify(conditions) 
+   *        schema:
+   *         type: string
+   *      - name: page
+   *        in: query
+   *        description: data page number starts from 0
+   *        schema:
+   *          type: number
+   *      - name: limit
+   *        in: query
+   *        description: data page size
+   *        schema:
+   *          type: number
+   *     responses:
+   *       200:
+   *         description: Specified by conditions, page and limit, data page with wallet info list
+   *         content:
+   *          application/json:
+   *            schema:
+   *              $ref: "#/components/schemas/SafeWalletOutput"  
+   *       500:
+   *         $ref: "#/components/responses/InternalServerError"
+   */
+  async get(req, res, next) {
+    try {
+      // FIXME: how to authorize ????
+      // if (req.auth.requester != req.params.walletId) {
+      //   return res.status(401).send(this.#composeError(401, 'Unauthorized'));
+      // }
+      req.query.conditions = this.#parseConditions(req.query.conditions);
+      const dataPage = await this.#service.get(
+        this.#parseConditions(req.query.conditions),
+        req.query.page,
+        req.query.limit
+      );
+      return res.status(200).send(dataPage);
+    } catch (err) {
+      res.status(500).send(this.#composeError(500, err.message));
+      return next(err);
+    }
+  }
+
+
   // PUT: /wallet/{ wallet_address }/invite-code, , with empty body{}
   /**
    * @openapi
@@ -181,4 +247,5 @@ export class WalletController {
       return next(err);
     }
   }
+
 }

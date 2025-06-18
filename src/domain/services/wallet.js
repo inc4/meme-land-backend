@@ -3,10 +3,12 @@ import { v4 as uuidv4 } from 'uuid';
 export class WalletService {
   #dataModel;
   #presaleContract;
+  #composeDataPage;
 
-  constructor(dataModel, presaleContract) {
+  constructor(dataModel, presaleContract, pageDataComposer) {
     this.#dataModel = dataModel;
     this.#presaleContract = presaleContract;
+    this.#composeDataPage = pageDataComposer;
   }
 
   async addSingle(data) {
@@ -27,6 +29,15 @@ export class WalletService {
 
   async getSingle(wallet) {
     return await this.#dataModel.findOne({ wallet });
+  }
+
+  async get(conditions, page, limit) {
+    const result = await this.#dataModel.paginate(conditions, {
+      page: page + 1, // paginate use 1 as first page
+      limit,
+      sort: { createdAt: -1 },// -1(DESC) | 1(ASC)
+    });
+    return this.#composeDataPage(result);
   }
 
   async updateInviteCode(wallet) {

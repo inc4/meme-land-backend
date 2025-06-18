@@ -4,30 +4,43 @@ import { v4 as uuidv4 } from 'uuid';
 
 export class CampaignService {
   #dataModel;
-  #presaleContractAdapter;
+  #presaleContract;
 
-  constructor(dataModel, presaleContractAdapter) {
+  constructor(dataModel, presaleContract) {
     this.#dataModel = dataModel;
-    this.#presaleContractAdapter = presaleContractAdapter;
+    this.#presaleContract = presaleContract;
   }
 
   async addCampaign(data) {
     data.campaignId = uuidv4();
+    const startDateTimestamp = new Date(data.presaleStartUTC).getTime()
+    data.presaleEndUTC = new Date(startDateTimestamp + 24 * 60 * 60 * 1000); // Presale ends 1 day after start
+    data.presaleDrawStartUTC = new Date(startDateTimestamp + 48 * 60 * 60 * 1000); // Draw starts 2 days after start
+    data.onChainTokenDescriptor = data.onChainTokenDescriptor || "Default Token Descriptor";
+    data.onChainCampaignDescriptor = data.onChainCampaignDescriptor || "Default Campaign Descriptor";
     const campaign = await this.#dataModel.create(data);
     try {
-      await this.#presaleContractAdapter.createToken();
+      await this.#presaleContract.createCampaign();
     } catch (err) {
-      await this.#dataModel.delete({ "campaignId": data.campaignId });
+      await this.#dataModel.deleteOne({ "campaignId": data.campaignId });
       throw err;
     }
     return campaign;
   }
 
+  async addToken(data) {
+    try {
+      await this.#presaleContract.createToken(data);
+    } catch (err) {
+      throw err;
+    }
+    return true;
+  }
 
-  async getSingleByCampagneId(tokenId) {
-    try{
-      return await this.#dataModel.findOne({ inviteCode });
-    } catch(err) {
+  async getSingleByCampaignId(campaignId) {
+    try {
+      return await this.#dataModel.findOne({ campaignId });
+    } catch (err) {
       throw err
     }
   }

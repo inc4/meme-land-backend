@@ -4,175 +4,222 @@
  *   schemas:
  *     CampaignInput:
  *       type: object
+ *       required:
+ *         - tokenName
+ *         - tokenSymbol
+ *         - tokenImage
+ *         - projectName
+ *         - coverImage
+ *         - walletAddress
+ *         - presalePrice
+ *         - listingMultiplier
+ *         - listingPrice
+ *         - profitChance
+ *         - amountOfWallet
+ *         - minInvestmentSize
+ *         - maxInvestmentSize
+ *         - presaleStartUTC
+ *         - fundsToLP
+ *         - buybackReserve
+ *         - team
+ *         - liquidityAtListing
+ *         - tokensSentToLP
+ *         - priceLevelSupport
+ *         - publicProvision
+ *         - liquidity
+ *         - pieChartTeam
+ *         - marketing
  *       properties:
+ *         tokenName:
+ *           type: string
+ *           example: "Mango Token"
+ *         tokenSymbol:
+ *           type: string
+ *           example: "MNGO"
+ *         tokenImage:
+ *           type: string
+ *           format: uri
+ *           example: "ipfs://QmXYZ.../mango.png"
  *         projectName:
  *           type: string
- *           description: Human-readable campaign title
  *           example: "Mango Presale"
- *         projectDescription:
+ *         shortDescription1:
  *           type: string
- *           description: Brief description of the project
- *         socials:
- *           type: object
- *           properties:
- *             twitter:
- *               type: string
- *             website:
- *               type: string
- *             telegram:
- *               type: string
- *         presaleData:
- *           type: object
- *           properties:
- *             presalePrice:
- *               type: number
- *               format: float
- *               description: Token price during presale (in SOL)
- *               example: 0.001
- *             listingPrice:
- *               type: number
- *               format: float
- *               description: Token listing price after presale (in SOL)
- *               example: 0.002
- *             profitChance:
- *               type: number
- *               format: float
- *               description: Chance of profit in percentage (0-100)
- *             listingMultiplier:
- *               type: number
- *               format: float
- *               description: Convenient multiplier = listingPrice / presalePrice
- *               example: 2
- *             maxWalletsAllowed:
- *               type: integer
- *               description: How many unique wallets may participate
- *               example: 1500
- *             minInvestment:
- *               type: number
- *               format: float
- *               description: Minimum investment size in USD
- *               example: 50
- *             maxInvestmentSize:
- *               type: number
- *               format: float
- *               description: Maximum investment size in USD
- *               example: 1000
- *             solCollectionWallet:
- *               type: string
- *               description: SOL address that receives presale funds
- *               example: 6xbBfC7pL5oSW7bKgT4hvFGAkdapM2iELyP3QwXsu4wm
- *         presaleTime:
- *           type: object
- *           properties:
- *             startUTC:
- *               type: string
- *               format: date-time
- *               description: Presale start time in UTC (ISO 8601 format)
- *               example: "123123172931283721"
- *             endUTC:
- *               type: string
- *               format: date-time
- *               description: Presale end time in UTC (ISO 8601 format)
- *               example: "123123172931283721"
- *             drawStartUTC:
- *               type: string
- *               format: date-time
- *               description: Presale draw start time in UTC (ISO 8601 format)
- *               example: "123123172931283721"
- *         fundsDistribution:
- *           type: object
- *           description: Distribution of raised funds
- *           properties:
- *             fundsToLP:
- *               type: number
- *               format: float
- *               description: Amount allocated to liquidity pool
- *               example: 5000
- *             buybackReserve:
- *               type: number
- *               format: float
- *               description: Amount reserved for buybacks
- *               example: 2000
- *             team:
- *               type: number
- *               format: float
- *               description: Amount allocated to the team
- *               example: 1500
- *             liquidityAtListing:
- *               type: number
- *               format: float
- *               description: Liquidity provided at listing
- *               example: 3000
- *             priceLevelSupport:
- *               type: number
- *               format: float
- *               description: Funds reserved for price support
- *               example: 1000
+ *         shortDescription2:
+ *           type: string
+ *         bigDescription:
+ *           type: array
+ *           description: Extended HTML / Markdown sections
+ *           items:
+ *             type: object
+ *             properties:
+ *               header:
+ *                 type: string
+ *               text:
+ *                 type: string
+ *         coverImage:
+ *           type: string
+ *           format: uri
+ *           example: "ipfs://QmXYZ.../cover.jpg"
+ *         walletAddress:
+ *           type: string
+ *           description: Immutable SOL address controlling the campaign
+ *           example: "6xbBfC7pL5oSW7bKgT4hvFGAkdapM2iELyP3QwXsu4wm"
+ *         presalePrice:
+ *           type: number
+ *           format: double
+ *           example: 0.001
+ *         listingMultiplier:
+ *           type: number
+ *           format: double
+ *           example: 2
+ *         listingPrice:
+ *           type: number
+ *           format: double
+ *           example: 0.002
+ *         profitChance:
+ *           type: number
+ *           format: double
+ *           description: Chance of profit in percentage
+ *           example: 75
+ *         amountOfWallet:
+ *           type: integer
+ *           example: 1500
+ *         minInvestmentSize:
+ *           type: number
+ *           format: double
+ *           example: 50
+ *         maxInvestmentSize:
+ *           type: number
+ *           format: double
+ *           example: 1000
+ *         presaleStartUTC:
+ *           type: string
+ *           format: date-time
+ *           example: "2025-07-01T12:00:00Z"
+ *         solscan:
+ *           type: string
+ *           format: uri
+ *           example: "https://solscan.io/token/..."
+ *         dexscreener:
+ *           type: string
+ *           format: uri
+ *         raydium:
+ *           type: string
+ *           format: uri
+ *         jupiter:
+ *           type: string
+ *           format: uri
+ *         fundsToLP:
+ *           type: number
+ *           format: double
+ *           example: 5000
+ *         buybackReserve:
+ *           type: number
+ *           format: double
+ *           example: 2000
+ *         team:
+ *           type: number
+ *           format: double
+ *           example: 1500
+ *         liquidityAtListing:
+ *           type: number
+ *           format: double
+ *           example: 3000
+ *         tokensSentToLP:
+ *           type: number
+ *           format: double
+ *           example: 1000000
+ *         priceLevelSupport:
+ *           type: number
+ *           format: double
+ *           example: 1000
+ *         publicProvision:
+ *           type: number
+ *           format: double
+ *           example: 40
+ *         liquidity:
+ *           type: number
+ *           format: double
+ *           example: 30
+ *         pieChartTeam:
+ *           type: number
+ *           format: double
+ *           example: 20
+ *         marketing:
+ *           type: number
+ *           format: double
+ *           example: 10
  *         tokenomics:
- *           type: object
- *           description: Tokenomics details
- *           properties:
- *             details:
- *               type: string
- *               description: Additional tokenomics details
- *               example: "Vesting: 12 months, unlock: 10 % at TGE"
- *             pieChart:
- *               type: object
- *               description: Tokenomics pie chart breakdown
- *               properties:
- *                 publicProvision:
- *                   type: number
- *                   format: float
- *                   description: Percentage allocated to public provision
- *                   example: 40
- *                 liquidity:
- *                   type: number
- *                   format: float
- *                   description: Percentage allocated to liquidity
- *                   example: 30
- *                 team:
- *                   type: number
- *                   format: float
- *                   description: Percentage allocated to team
- *                   example: 20
- *                 marketing:
- *                   type: number
- *                   format: float
- *                   description: Percentage allocated to marketing
- *                   example: 10
+ *           type: array
+ *           items:
+ *             type: object
+ *             properties:
+ *               item:
+ *                 type: string
+ *                 example: "Advisors"
+ *               percent:
+ *                 type: number
+ *                 format: double
+ *                 example: 5
+ *         twitter:
+ *           type: string
+ *           format: uri
+ *           example: "https://twitter.com/mango"
+ *         website:
+ *           type: string
+ *           format: uri
+ *           example: "https://mango.io"
+ *         telegram:
+ *           type: string
+ *           format: uri
+ *           example: "https://t.me/mango_chat"
  *
  *     CampaignOutput:
  *       allOf:
  *         - $ref: "#/components/schemas/CampaignInput"
  *         - type: object
  *           properties:
+ *             currentStatus: 
+ *              type: string
+ *              description: Current status of the campaign
+ *              enum: ["waiting", "live", "closed", "etc"]
+ *             presaleProgress: 
+ *               type: double
+ *               description: Progress of the presale in sol,
  *             campaignId:
  *               type: string
  *               description: Unique campaign identifier
- *               example: "abc123"
+ *               example: "d89c1234-fb77-4ed3-88e1-52c71db8c0b6"
  *             createdAt:
  *               type: string
  *               format: date-time
- *               description: Campaign creation timestamp
- *               example: "2024-06-01T12:00:00Z"
+ *               example: "2025-06-17T12:34:56Z"
+ *             presaleEndUTC:
+ *               type: string
+ *               format: date-time
+ *               example: "2025-07-02T12:00:00Z"
+ *             presaleDrawStartUTC:
+ *               type: string
+ *               format: date-time
+ *               example: "2025-07-02T14:00:00Z"
  */
 
 
 export class CampaignController {
-  #tokenService;
   #campaignService;
   #composeError;
 
-  constructor(tokenService, campaignService, errorComposer) {
-    this.#tokenService   = tokenService;
+  constructor(campaignService, errorComposer) {
     this.#campaignService = campaignService;
-    this.#composeError   = errorComposer;
+    this.#composeError = errorComposer;
   }
 
   registerRoutes(router) {
     router.post('/campaign', this.addCampaign.bind(this));
     router.get('/campaign/:campaignId', this.getSingleByCampaignId.bind(this));
     // TODO: router.put('/campaign/:campaignId', this.updateCampaign.bind(this));
+    // TODO: router.get('campaign', th)
   }
 
   /**
@@ -203,30 +250,30 @@ export class CampaignController {
    */
   async addCampaign(req, res, next) {
     try {
-      console.log('Authorized');
 
-      const tokenAddress = await this.#tokenService.addToken();
-      if (!tokenAddress) {
+      const tokenRawData = this.#composeTokenRawData(req.body)
+
+      const tokenData = await this.#campaignService.addToken(tokenRawData);
+      if (!tokenData) {
         return res
           .status(400)
           .send(this.#composeError(400, 'Token creation failed'));
       }
 
-      const campaign = await this.#campaignService.addCampaign(
+      const campaignData = await this.#campaignService.addCampaign(
         req.body,
-        tokenAddress,
       );
-      if (!campaign) {
+      if (!campaignData) {
         return res
           .status(400)
           .send(this.#composeError(400, 'Campaign creation failed'));
       }
-
-      return res.status(201).send(campaign);
+      return res.status(201).send(campaignData);
     } catch (err) {
       res.status(500).send(this.#composeError(500, err.message));
       return next(err);
     }
+
   }
 
   /**
@@ -256,8 +303,6 @@ export class CampaignController {
    */
   async getSingleByCampaignId(req, res, next) {
     try {
-      console.log('Authorized');
-
       const data = await this.#campaignService.getSingleByCampaignId(
         req.params.campaignId,
       );
@@ -272,6 +317,14 @@ export class CampaignController {
     } catch (err) {
       res.status(500).send(this.#composeError(500, err.message));
       return next(err);
+    }
+
+  }
+
+  #composeTokenRawData(data) {
+    return {
+      tokenName: data.tokenName,
+      tokenSymbol: data.tokenSymbol
     }
   }
 }

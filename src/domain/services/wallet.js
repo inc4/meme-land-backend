@@ -2,18 +2,18 @@ import { v4 as uuidv4 } from 'uuid';
 
 export class WalletService {
   #dataModel;
-  #presaleContractAdapter;
+  #presaleContract;
 
-  constructor(dataModel, presaleContractAdapter) {
+  constructor(dataModel, presaleContract) {
     this.#dataModel = dataModel;
-    this.#presaleContractAdapter = presaleContractAdapter;
+    this.#presaleContract = presaleContract;
   }
 
   async addSingle(data) {
     data.inviteCode = uuidv4();
     const user = await this.#dataModel.create(data);
     try {
-      await this.#presaleContractAdapter.addUser(user.wallet);
+      await this.#presaleContract.addUser(user.wallet);
     } catch (err) {
       await this.#dataModel.delete({ wallet });
       throw err;
@@ -24,7 +24,6 @@ export class WalletService {
   async getSingleByInviteCode(inviteCode) {
     return await this.#dataModel.findOne({ inviteCode });
   }
-
 
   async getSingle(wallet) {
     return await this.#dataModel.findOne({ wallet });

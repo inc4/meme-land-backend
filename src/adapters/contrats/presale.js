@@ -8,13 +8,15 @@ export class PresaleContract {
     console.log(`Attempt to add wallet(${wallet}) to presale contract user pool`);
   }
 
-  async createToken(name, symbol, uri) {
+  async createToken(tokeData) {
     // FIXME: implement
-    console.log(`Attempt to create token(${name}) to token contract user pool`);
+    console.log(`Attempt to create token(${tokeData}) to presale contract`);
+    return {toke: 'token'};
   }
 
-  async createCampaign(name, symbol, uri) {
+  async createCampaign(campaignData) {
     // FIXME: implement
-    console.log(`Attempt to create campaign(${name}) to token contract user pool`);
+    console.log(`Attempt to create campaign(${campaignData}) to presale contract`);
+    return {campaign: 'campaign'};
   }
 }

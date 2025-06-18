@@ -1,5 +1,6 @@
 // TODO: https://inc4net.atlassian.net/wiki/spaces/ML/pages/1319600129/The+data+and+where+we+download+it+from тут будут апдейтебл филдс и обьязательные полня и вся схема данных по сущностям
 import * as mongoose from "mongoose";
+import mongoosePaginate from 'mongoose-paginate-v2';
 
 const CampaignSchema = new mongoose.Schema(
   {
@@ -91,5 +92,7 @@ const CampaignSchema = new mongoose.Schema(
     },
   },
 );
+
+CampaignSchema.plugin(mongoosePaginate);
 
 export const campaignModel = mongoose.model('Campaign', CampaignSchema);

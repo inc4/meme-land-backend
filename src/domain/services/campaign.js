@@ -5,10 +5,12 @@ import { v4 as uuidv4 } from 'uuid';
 export class CampaignService {
   #dataModel;
   #presaleContract;
+  #composeDataPage;
 
-  constructor(dataModel, presaleContract) {
+  constructor(dataModel, presaleContract, pageDataComposer) {
     this.#dataModel = dataModel;
     this.#presaleContract = presaleContract;
+    this.#composeDataPage = pageDataComposer;
   }
 
   async addCampaign(data) {
@@ -20,9 +22,9 @@ export class CampaignService {
     data.onChainCampaignDescriptor = data.onChainCampaignDescriptor || "Default Campaign Descriptor";
     const campaign = await this.#dataModel.create(data);
     try {
-      await this.#presaleContract.createCampaign();
+      await this.#presaleContract.createCampaign(data);
     } catch (err) {
-      await this.#dataModel.deleteOne({ "campaignId": data.campaignId });
+      await this.#dataModel.deleteOne({ campaignId: data.campaignId });
       throw err;
     }
     return campaign;
@@ -54,19 +56,23 @@ export class CampaignService {
 
   async addToken(data) {
     try {
-      await this.#presaleContract.createToken(data);
+      return await this.#presaleContract.createToken(data);
     } catch (err) {
-      throw err;
+      return null;
     }
-    return true;
   }
 
   async getSingleByCampaignId(campaignId) {
-    try {
-      return await this.#dataModel.findOne({ campaignId });
-    } catch (err) {
-      throw err
-    }
+    return await this.#dataModel.findOne({ campaignId });
+  }
+
+  async get(conditions, page = 0, limit = 10) {
+    const result = await this.#dataModel.paginate(conditions, {
+      page: page + 1, // paginate use 1 as first page
+      limit,
+      sort: { createdAt: -1 },// -1(DESC) | 1(ASC)
+    });
+    return this.#composeDataPage(result);
   }
 
 }

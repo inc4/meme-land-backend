@@ -162,7 +162,7 @@ export class WalletController {
    *     parameters:
    *      - name: conditions
    *        in: query
-   *        description: stringified and encoded query conditions, according to Account schema, encodeURIComponent(JSON.stringify(conditions) 
+   *        description: stringified and encoded query conditions, according to Wallet schema, encodeURIComponent(JSON.stringify(conditions) 
    *        schema:
    *         type: string
    *      - name: page
@@ -191,7 +191,6 @@ export class WalletController {
       // if (req.auth.requester != req.params.walletId) {
       //   return res.status(401).send(this.#composeError(401, 'Unauthorized'));
       // }
-      req.query.conditions = this.#parseConditions(req.query.conditions);
       const dataPage = await this.#service.get(
         this.#parseConditions(req.query.conditions),
         req.query.page,

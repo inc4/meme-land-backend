@@ -25,8 +25,8 @@ mongoose.connect(config.mongo.url, config.mongo.options);
 const presaleContract = new PresaleContract();
 const walletService = new WalletService(walletModel, presaleContract, DataPageComposer.composePageInfo);
 const walletController = new WalletController(walletService, HttpErrorBody.compose, RequestInputsParser.parseRequestQueryParam);
-const campaignService = new CampaignService(campaignModel, presaleContract)
-const campaignController = new CampaignController(campaignService, HttpErrorBody.compose)
+const campaignService = new CampaignService(campaignModel, presaleContract, DataPageComposer.composePageInfo)
+const campaignController = new CampaignController(campaignService, HttpErrorBody.compose, RequestInputsParser.parseRequestQueryParam)
 
 const swaggerController = new SwaggerController();
 

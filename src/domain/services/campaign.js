@@ -22,9 +22,9 @@ export class CampaignService {
     data.onChainCampaignDescriptor = data.onChainCampaignDescriptor || "Default Campaign Descriptor";
     const campaign = await this.#dataModel.create(data);
     try {
-      await this.#presaleContract.createCampaign();
+      await this.#presaleContract.createCampaign(data);
     } catch (err) {
-      await this.#dataModel.deleteOne({ "campaignId": data.campaignId });
+      await this.#dataModel.deleteOne({ campaignId: data.campaignId });
       throw err;
     }
     return campaign;
@@ -56,15 +56,14 @@ export class CampaignService {
 
   async addToken(data) {
     try {
-      await this.#presaleContract.createToken(data);
+      return await this.#presaleContract.createToken(data);
     } catch (err) {
-      return false;
+      return null;
     }
-    return true;
   }
 
   async getSingleByCampaignId(campaignId) {
-      return await this.#dataModel.findOne({ campaignId });
+    return await this.#dataModel.findOne({ campaignId });
   }
 
   async get(conditions, page = 0, limit = 10) {

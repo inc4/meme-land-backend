@@ -4,9 +4,9 @@ import { v4 as uuidv4 } from 'uuid';
 import cors from 'cors';
 import mongoose from 'mongoose';
 
-import { WinstonLoggerAdapter, PresaleContract, } from '../../adapters/index.js';
-import { walletModel, WalletService } from '../../domain/index.js';
-import { WalletController } from '../../controllers/index.js'
+import { WinstonLoggerAdapter, PresaleContract } from '../../adapters/index.js';
+import { walletModel, WalletService, campaignModel, CampaignService } from '../../domain/index.js';
+import { WalletController, CampaignController } from '../../controllers/index.js'
 import { Authentication } from '../../middlewares/index.js'
 import { HttpErrorBody, RequestInputsParser, DataPageComposer } from '../../libs/index.js'
 
@@ -21,9 +21,12 @@ const logger = new WinstonLoggerAdapter(winston, config.logger);
 
 
 mongoose.connect(config.mongo.url, config.mongo.options);
+
 const presaleContract = new PresaleContract();
 const walletService = new WalletService(walletModel, presaleContract);
 const walletController = new WalletController(walletService, HttpErrorBody.compose);
+const campaignService = new CampaignService(campaignModel, presaleContract)
+const campaignController = new CampaignController(campaignService, HttpErrorBody.compose)
 
 const swaggerController = new SwaggerController();
 
@@ -59,6 +62,8 @@ router.use(auth.retrieveRequesterWallet.bind(auth));
 
 // register wallet controllers
 walletController.registerRoutes(router);
+// register campaign controllers
+campaignController.registerRoutes(router);
 
 app.use('/api/1.0.0', router);
 

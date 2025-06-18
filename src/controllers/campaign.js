@@ -49,7 +49,7 @@
  *           type: string
  *         bigDescription:
  *           type: array
- *           description: Extended HTML / Markdown sections
+ *           description:     Extended HTML / Markdown sections. ⚠️ This array is **fully overwritten** during update — send the complete array, not partial changes.
  *           items:
  *             type: object
  *             properties:
@@ -62,8 +62,8 @@
  *           format: uri
  *           example: "ipfs://QmXYZ.../cover.jpg"
  *         walletAddress:
+ *           description: SOL address controlling the campaign. IMMUTABLE
  *           type: string
- *           description: Immutable SOL address controlling the campaign
  *           example: "6xbBfC7pL5oSW7bKgT4hvFGAkdapM2iELyP3QwXsu4wm"
  *         presalePrice:
  *           type: number
@@ -83,13 +83,16 @@
  *           description: Chance of profit in percentage
  *           example: 75
  *         amountOfWallet:
+ *           description: Maximum number of wallets allowed to participate in the presale. IMMUTABLE
  *           type: integer
  *           example: 1500
  *         minInvestmentSize:
+ *           description: Minimum investment size in SOL. IMMUTABLE
  *           type: number
  *           format: double
  *           example: 50
  *         maxInvestmentSize:
+ *           description: Maximum investment size in SOL. IMMUTABLE
  *           type: number
  *           format: double
  *           example: 1000
@@ -152,6 +155,7 @@
  *           example: 10
  *         tokenomics:
  *           type: array
+ *           description: Tokenomics breakdown. ⚠️ This array is **fully overwritten** during update — send the complete array, not partial changes.
  *           items:
  *             type: object
  *             properties:
@@ -188,10 +192,11 @@
  *               type: double
  *               description: Progress of the presale in sol,
  *             campaignId:
+ *               description: Unique campaign identifier. IMMUTABLE
  *               type: string
- *               description: Unique campaign identifier
  *               example: "d89c1234-fb77-4ed3-88e1-52c71db8c0b6"
  *             createdAt:
+ *               description: Campaign creation timestamp. IMMUTABLE
  *               type: string
  *               format: date-time
  *               example: "2025-06-17T12:34:56Z"
@@ -218,7 +223,7 @@ export class CampaignController {
   registerRoutes(router) {
     router.post('/campaign', this.addCampaign.bind(this));
     router.get('/campaign/:campaignId', this.getSingleByCampaignId.bind(this));
-    // TODO: router.put('/campaign/:campaignId', this.updateCampaign.bind(this));
+    router.put('/campaign/:campaignId', this.updateCampaign.bind(this));
     // TODO: router.get('campaign', th)
   }
 
@@ -319,6 +324,65 @@ export class CampaignController {
       return next(err);
     }
 
+  }
+
+  /**
+    * @openapi
+    * /campaign/{campaignId}:
+    *   put:
+    *     summary: Update existing campaign
+    *     parameters:
+    *       - in: path
+    *         name: campaignId
+    *         required: true
+    *         schema:
+    *           type: string
+    *     requestBody:
+    *       required: true
+    *       description: Campaign parameters to update
+    *       content:
+    *         application/json:
+    *           schema:
+    *             $ref: "#/components/schemas/CampaignInput"
+    *     responses:
+    *       200:
+    *         description: Updated campaign info
+    *         content:
+    *           application/json:
+    *             schema:
+    *               $ref: "#/components/schemas/CampaignOutput"
+    *       400:
+    *         $ref: "#/components/responses/InvalidInputs"
+    *       404:
+    *         $ref: "#/components/responses/NotFound"
+    *       401:
+    *         $ref: "#/components/responses/Unauthorized"
+    *       500:
+    *         $ref: "#/components/responses/InternalServerError"   
+   */
+  async updateCampaign(req, res, next) {
+    try {
+      const updated = await this.#campaignService.updateCampaign(
+        req.params.campaignId,
+        req.body,
+      );
+
+      if (updated) {
+        return res.status(200).send(updated);
+      }
+
+      return res
+        .status(404)
+        .send(this.#composeError(404, 'No campaign found'));
+    } catch (err) {
+      if (err.message.includes('immutable')) {
+        return res
+          .status(400)
+          .send(this.#composeError(400, 'Attempted to update immutable field'));
+      }
+      res.status(500).send(this.#composeError(500, err.message));
+      return next(err);
+    }
   }
 
   #composeTokenRawData(data) {

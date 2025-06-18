@@ -28,6 +28,30 @@ export class CampaignService {
     return campaign;
   }
 
+  async updateCampaign(campaignId, data) {
+    try {
+      const updated = await this.#dataModel.findOneAndUpdate(
+        { campaignId },
+        { $set: data },
+        { new: true, runValidators: true }
+      );
+
+      if (!updated) {
+        throw new Error(`Campaign with ID ${campaignId} not found.`);
+      }
+
+      return updated;
+
+    } catch (err) {
+      // Проверяем на ошибку изменения immutable поля
+      if (err.name === 'StrictModeError' || err.message.includes('immutable')) {
+        throw new Error(`Attempted to update immutable field: ${err.message}`);
+      }
+
+      throw err;
+    }
+  }
+
   async addToken(data) {
     try {
       await this.#presaleContract.createToken(data);

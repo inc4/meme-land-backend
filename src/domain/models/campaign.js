@@ -9,6 +9,7 @@ const CampaignSchema = new mongoose.Schema(
       index: true,
       unique: true,
       required: true,
+      immutable: true
     },
 
     /* === TOKEN DATA */
@@ -86,6 +87,7 @@ const CampaignSchema = new mongoose.Schema(
     createdAt: {
       type: Date,
       default: Date.now,
+      immutable: true
     },
   },
 );

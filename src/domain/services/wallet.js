@@ -31,7 +31,7 @@ export class WalletService {
     return await this.#dataModel.findOne({ wallet });
   }
 
-  async get(conditions, page, limit) {
+  async get(conditions, page = 0, limit = 10) {
     const result = await this.#dataModel.paginate(conditions, {
       page: page + 1, // paginate use 1 as first page
       limit,

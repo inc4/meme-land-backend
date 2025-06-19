@@ -1,4 +1,4 @@
-import * as mongoose from "mongoose";
+import * as mongoose from 'mongoose';
 import mongoosePaginate from 'mongoose-paginate-v2';
 
 const walletSchema = new mongoose.Schema({

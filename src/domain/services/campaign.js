@@ -18,8 +18,8 @@ export class CampaignService {
     const startDateTimestamp = new Date(data.presaleStartUTC).getTime()
     data.presaleEndUTC = new Date(startDateTimestamp + 24 * 60 * 60 * 1000); // Presale ends 1 day after start
     data.presaleDrawStartUTC = new Date(startDateTimestamp + 48 * 60 * 60 * 1000); // Draw starts 2 days after start
-    data.onChainTokenDescriptor = data.onChainTokenDescriptor || "Default Token Descriptor";
-    data.onChainCampaignDescriptor = data.onChainCampaignDescriptor || "Default Campaign Descriptor";
+    data.onChainTokenDescriptor = data.onChainTokenDescriptor || 'Default Token Descriptor';
+    data.onChainCampaignDescriptor = data.onChainCampaignDescriptor || 'Default Campaign Descriptor';
     const campaign = await this.#dataModel.create(data);
     try {
       await this.#presaleContract.createCampaign(data);
@@ -45,7 +45,6 @@ export class CampaignService {
       return updated;
 
     } catch (err) {
-      // Проверяем на ошибку изменения immutable поля
       if (err.name === 'StrictModeError' || err.message.includes('immutable')) {
         throw new Error(`Attempted to update immutable field: ${err.message}`);
       }

@@ -5,8 +5,15 @@ import cors from 'cors';
 import mongoose from 'mongoose';
 
 import { WinstonLoggerAdapter, PresaleContract } from '../../adapters/index.js';
-import { walletModel, WalletService, campaignModel, CampaignService } from '../../domain/index.js';
-import { WalletController, CampaignController } from '../../controllers/index.js'
+import {
+  walletModel,
+  WalletService,
+  campaignModel,
+  CampaignService,
+  participationModel,
+  ParticipationService
+} from '../../domain/index.js';
+import { WalletController, CampaignController, ParticipationController } from '../../controllers/index.js'
 import { Authentication } from '../../middlewares/index.js'
 import { HttpErrorBody, RequestInputsParser, DataPageComposer } from '../../libs/index.js'
 
@@ -27,6 +34,9 @@ const walletService = new WalletService(walletModel, presaleContract, DataPageCo
 const walletController = new WalletController(walletService, HttpErrorBody.compose, RequestInputsParser.parseRequestQueryParam);
 const campaignService = new CampaignService(campaignModel, presaleContract, DataPageComposer.composePageInfo)
 const campaignController = new CampaignController(campaignService, HttpErrorBody.compose, RequestInputsParser.parseRequestQueryParam)
+
+const participationService = new ParticipationService(participationModel, campaignService, DataPageComposer.composePageInfo);
+const participationController = new ParticipationController(participationService, HttpErrorBody.compose, RequestInputsParser.parseRequestQueryParam);
 
 const swaggerController = new SwaggerController();
 
@@ -62,9 +72,14 @@ router.use(auth.retrieveRequesterWallet.bind(auth));
 
 // register wallet controllers
 walletController.registerRoutes(router);
+
 // register campaign controllers
 campaignController.registerRoutes(router);
 
+// register participation controllers
+participationController.registerRoutes(router);
+
+// add api routes to app
 app.use('/api/1.0.0', router);
 
 // handle unknown route

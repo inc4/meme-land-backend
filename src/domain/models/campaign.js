@@ -1,5 +1,5 @@
 // TODO: https://inc4net.atlassian.net/wiki/spaces/ML/pages/1319600129/The+data+and+where+we+download+it+from тут будут апдейтебл филдс и обьязательные полня и вся схема данных по сущностям
-import * as mongoose from "mongoose";
+import * as mongoose from 'mongoose';
 import mongoosePaginate from 'mongoose-paginate-v2';
 
 const CampaignSchema = new mongoose.Schema(
@@ -22,14 +22,20 @@ const CampaignSchema = new mongoose.Schema(
     projectName: { type: String, required: true },
     shortDescription1: { type: String },
     shortDescription2: { type: String },
-    bigDescription: [
-      {
-        header: { type: String },
-        text: { type: String }
-      }
-    ],
+    bigDescriptionHeader1: { type: String, required: true },
+    bigDescriptionHeader2: { type: String, required: true },
+    bigDescriptionText1: { type: String, required: true },
+    bigDescriptionText2: { type: String, required: true },
     coverImage: { type: String, required: true },
-    currentStatus: { type: String, required: true, default: "waiting", enum: ["waiting", "live", "closed", "etc"] },
+    currentStatus: {
+      type: String, required: true, default: 'upcoming', enum: [
+        'upcoming',
+        'presaleOpened',
+        'presaleFinished',
+        'distributionOpened',
+        'distributionFinished',
+      ]
+    },
     presaleProgress: { type: mongoose.Types.Decimal128, required: true, default: 0 },
 
     walletAddress: { type: String, required: true, immutable: true },

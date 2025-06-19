@@ -47,17 +47,18 @@
  *           type: string
  *         shortDescription2:
  *           type: string
- *         bigDescription:
- *           type: array
- *           description:     Extended HTML / Markdown sections. ⚠️ This array is **fully overwritten** during update — send the complete array, not partial changes.
- *           items:
- *             type: object
- *             properties:
- *               header:
- *                 type: string
- *               text:
- *                 description: HTML or Markdown formatted text. ⚠️ MAX size of string is 16 MB.
- *                 type: string
+ *         bigDescriptionHeader1:
+ *           type: string
+ *           example: "Welcome to Mango"
+ *         bigDescriptionHeader2:
+ *           type: string
+ *           example: "Join the Presale"
+ *         bigDescriptionText1:
+ *           type: string
+ *           example: "Mango is a revolutionary project..."
+ *         bigDescriptionText2:
+ *           type: string
+ *           example: "Participate in our presale to get early access..."
  *         coverImage:
  *           type: string
  *           format: uri
@@ -188,7 +189,7 @@
  *             currentStatus: 
  *              type: string
  *              description: Current status of the campaign
- *              enum: ["waiting", "live", "closed", "etc"]
+ *              enum: ['upcoming','presaleOpened','presaleFinished','distributionOpened','distributionFinished']
  *             presaleProgress: 
  *               type: double
  *               description: Progress of the presale in sol,
@@ -281,7 +282,6 @@ export class CampaignController {
       res.status(500).send(this.#composeError(500, err.message));
       return next(err);
     }
-
   }
 
   /**
@@ -328,37 +328,37 @@ export class CampaignController {
     }
   }
 
-/**
-   * @openapi
-   * /campaigns:
-   *   get:
-   *     summary: get campaigns info paginated data
-   *     parameters:
-   *      - name: conditions
-   *        in: query
-   *        description: stringified and encoded query conditions, according to Campaign schema, encodeURIComponent(JSON.stringify(conditions) 
-   *        schema:
-   *         type: string
-   *      - name: page
-   *        in: query
-   *        description: data page number starts from 0
-   *        schema:
-   *          type: number
-   *      - name: limit
-   *        in: query
-   *        description: data page size
-   *        schema:
-   *          type: number
-   *     responses:
-   *       200:
-   *         description: Specified by conditions, page and limit, data page with campaign info list
-   *         content:
-   *          application/json:
-   *            schema:
-   *              $ref: "#/components/schemas/CampaignOutput"  
-   *       500:
-   *         $ref: "#/components/responses/InternalServerError"
-   */
+  /**
+     * @openapi
+     * /campaigns:
+     *   get:
+     *     summary: get campaigns info paginated data
+     *     parameters:
+     *      - name: conditions
+     *        in: query
+     *        description: stringified and encoded query conditions, according to Campaign schema, encodeURIComponent(JSON.stringify(conditions) 
+     *        schema:
+     *         type: string
+     *      - name: page
+     *        in: query
+     *        description: data page number starts from 0
+     *        schema:
+     *          type: number
+     *      - name: limit
+     *        in: query
+     *        description: data page size
+     *        schema:
+     *          type: number
+     *     responses:
+     *       200:
+     *         description: Specified by conditions, page and limit, data page with campaign info list
+     *         content:
+     *          application/json:
+     *            schema:
+     *              $ref: "#/components/schemas/CampaignOutput"  
+     *       500:
+     *         $ref: "#/components/responses/InternalServerError"
+     */
   async get(req, res, next) {
     try {
       // FIXME: how to authorize ????

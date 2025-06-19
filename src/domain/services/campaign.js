@@ -65,7 +65,15 @@ export class CampaignService {
     return await this.#dataModel.findOne({ campaignId });
   }
 
+  async getSingleByCampaignId(campaignId) {
+    return await this.#dataModel.findOne({ campaignId });
+  }
+
   async get(conditions, page = 0, limit = 10) {
+    if (conditions.currentStatus) {
+      const statusArray = conditions.status.split('|');
+      conditions.status = { $in: statusArray };
+    }
     const result = await this.#dataModel.paginate(conditions, {
       page: page + 1, // paginate use 1 as first page
       limit,

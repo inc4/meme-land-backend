@@ -336,7 +336,8 @@ export class CampaignController {
      *     parameters:
      *      - name: conditions
      *        in: query
-     *        description: stringified and encoded query conditions, according to Campaign schema, encodeURIComponent(JSON.stringify(conditions) 
+     *        description: stringified and encoded query conditions, according to Campaign schema, encodeURIComponent(JSON.stringify(conditions). In case of multiple conditions, use '|' as a separator, e.g. currentStatus="upcoming|presaleOpened". Now only for status field.
+     *        example: '{"currentStatus":"upcoming|presaleOpened"}'
      *        schema:
      *         type: string
      *      - name: page

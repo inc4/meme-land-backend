@@ -40,10 +40,6 @@ const CampaignSchema = new mongoose.Schema(
 
     walletAddress: { type: String, required: true, immutable: true },
 
-    /* === ON-CHAIN DATA */
-    onChainTokenDescriptor: { type: String, required: true },
-    onChainCampaignDescriptor: { type: String, required: true },
-
     /* === PRESALE DATA */
     presalePrice: { type: mongoose.Types.Decimal128, required: true },
     listingMultiplier: { type: mongoose.Types.Decimal128, required: true },
@@ -57,6 +53,7 @@ const CampaignSchema = new mongoose.Schema(
     presaleStartUTC: { type: Date, required: true },
     presaleEndUTC: { type: Date, required: true },
     presaleDrawStartUTC: { type: Date, required: true },
+    presaleDrawEndUTC: { type: Date, required: true },
 
     /* === TOKEN INFO LINKS  */
     solscan: { type: String },

@@ -18,8 +18,7 @@ export class CampaignService {
     const startDateTimestamp = new Date(data.presaleStartUTC).getTime()
     data.presaleEndUTC = new Date(startDateTimestamp + 24 * 60 * 60 * 1000); // Presale ends 1 day after start
     data.presaleDrawStartUTC = new Date(startDateTimestamp + 48 * 60 * 60 * 1000); // Draw starts 2 days after start
-    data.onChainTokenDescriptor = data.onChainTokenDescriptor || 'Default Token Descriptor';
-    data.onChainCampaignDescriptor = data.onChainCampaignDescriptor || 'Default Campaign Descriptor';
+    data.presaleDrawEndUTC = new Date(startDateTimestamp + 72 * 60 * 60 * 1000); // Draw ends 3 days after start
     const campaign = await this.#dataModel.create(data);
     try {
       await this.#presaleContract.createCampaign(data);
@@ -71,8 +70,8 @@ export class CampaignService {
 
   async get(conditions, page = 0, limit = 10) {
     if (conditions.currentStatus) {
-      const statusArray = conditions.status.split('|');
-      conditions.status = { $in: statusArray };
+      const statusArray = conditions.currentStatus.split('|');
+      conditions.currentStatus = { $in: statusArray };
     }
     const result = await this.#dataModel.paginate(conditions, {
       page: page + 1, // paginate use 1 as first page

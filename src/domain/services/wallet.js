@@ -12,15 +12,9 @@ export class WalletService {
   }
 
   async addSingle(data) {
+    await this.#presaleContract.addUser(user.wallet);
     data.inviteCode = uuidv4();
-    const user = await this.#dataModel.create(data);
-    try {
-      await this.#presaleContract.addUser(user.wallet);
-    } catch (err) {
-      await this.#dataModel.delete({ wallet });
-      throw err;
-    }
-    return user;
+    return await this.#dataModel.create(data);
   }
 
   async getSingleByInviteCode(inviteCode) {

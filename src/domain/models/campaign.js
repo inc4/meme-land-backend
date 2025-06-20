@@ -14,9 +14,12 @@ const CampaignSchema = new mongoose.Schema(
     },
 
     /* === TOKEN DATA */
-    tokenName: { type: String, required: true },
-    tokenSymbol: { type: String, required: true },
-    tokenImage: { type: String, required: true },
+    tokenName: { type: String, required: true, immutable: true },
+    tokenSymbol: { type: String, required: true, immutable: true },
+    tokenImage: { type: String, required: true, immutable: true },
+    tokenMintAddress: { type: String, required: true, immutable: true },
+    tokenSupply: { type: Number, required: true, immutable: true },
+    tokenMintPda: { type: String, required: true }, // token mintPda returned from presale adapter createToken
 
     /* === PROJECT INFO */
     projectName: { type: String, required: true },
@@ -41,13 +44,13 @@ const CampaignSchema = new mongoose.Schema(
     walletAddress: { type: String, required: true, immutable: true },
 
     /* === ON-CHAIN DATA */
-    onChainTokenDescriptor: { type: String, required: true },
-    onChainCampaignDescriptor: { type: String, required: true },
+    campaignPda: { type: String, required: true },
+    campaignStatsPda: { type: String, required: true },
 
     /* === PRESALE DATA */
-    presalePrice: { type: mongoose.Types.Decimal128, required: true },
+    presalePrice: { type: mongoose.Types.Decimal128, required: true, immutable: true },
     listingMultiplier: { type: mongoose.Types.Decimal128, required: true },
-    listingPrice: { type: mongoose.Types.Decimal128, required: true },
+    listingPrice: { type: mongoose.Types.Decimal128, required: true, immutable: true },
     profitChance: { type: mongoose.Types.Decimal128, required: true },
     amountOfWallet: { type: Number, required: true, immutable: true },
     minInvestmentSize: { type: mongoose.Types.Decimal128, required: true, immutable: true },
@@ -57,6 +60,8 @@ const CampaignSchema = new mongoose.Schema(
     presaleStartUTC: { type: Date, required: true },
     presaleEndUTC: { type: Date, required: true },
     presaleDrawStartUTC: { type: Date, required: true },
+    presaleDrawEndUTC: { type: Date, required: true },
+    tokenUnlockInterval: { type: Number, required: true, immutable: true },
 
     /* === TOKEN INFO LINKS  */
     solscan: { type: String },

@@ -6,6 +6,15 @@ const env = process.env;
 
 const config = {};
 
+
+
+config.presaleDefaults = {
+  changeStatusInterval: 24 * 60 * 60 * 1000,
+  tokenUnlockInterval: 60 * 1000,
+  tokenSupply: 1000000000,
+};
+
+
 // server
 config.server = {
   port: env.SERVER_PORT,

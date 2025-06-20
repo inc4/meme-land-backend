@@ -8,6 +8,7 @@
  *         - tokenName
  *         - tokenSymbol
  *         - tokenImage
+ *         - tokenMintAddress
  *         - projectName
  *         - coverImage
  *         - walletAddress
@@ -40,6 +41,9 @@
  *           type: string
  *           format: uri
  *           example: "ipfs://QmXYZ.../mango.png"
+ *         tokenMintAddress:
+ *           type: string
+ *           example: "6xbBfC7pL5oSW7bKgT4hvFGAkdapM2iELyP3QwXsu4wm"
  *         projectName:
  *           type: string
  *           example: "Mango Presale"
@@ -210,6 +214,26 @@
  *               type: string
  *               format: date-time
  *               example: "2025-07-02T14:00:00Z"
+ *             presaleDrawEndUTC:
+ *               type: string
+ *               format: date-time
+ *               example: "2025-07-02T14:00:00Z"
+ *             tokenUnlockInterval:
+ *               description: interval in MS
+ *               type: number
+ *               example: 60000
+ *             campaignPda:
+ *               type: string
+ *               example: "6xbBfC7pL5oSW7bKgT4hvFGAkdapM2iELyP3QwXsu4wm"
+ *             campaignStatsPda:
+ *               type: string
+ *               example: "6xbBfC7pL5oSW7bKgT4hvFGAkdapM2iELyP3QwXsu4wm"
+ *             tokenSupply:
+ *               type: number
+ *               example: 1000000000
+ *             tokenMintPda:
+ *               type: string
+ *               example: "6xbBfC7pL5oSW7bKgT4hvFGAkdapM2iELyP3QwXsu4wm"
  */
 
 
@@ -259,24 +283,7 @@ export class CampaignController {
    */
   async addCampaign(req, res, next) {
     try {
-
-      const tokenRawData = this.#composeTokenRawData(req.body)
-
-      const tokenData = await this.#campaignService.addToken(tokenRawData);
-      if (!tokenData) {
-        return res
-          .status(400)
-          .send(this.#composeError(400, 'Token creation failed'));
-      }
-
-      const campaignData = await this.#campaignService.addCampaign(
-        req.body,
-      );
-      if (!campaignData) {
-        return res
-          .status(400)
-          .send(this.#composeError(400, 'Campaign creation failed'));
-      }
+      const campaignData = await this.#campaignService.addCampaign(req.body);
       return res.status(201).send(campaignData);
     } catch (err) {
       res.status(500).send(this.#composeError(500, err.message));
@@ -438,10 +445,4 @@ export class CampaignController {
     }
   }
 
-  #composeTokenRawData(data) {
-    return {
-      tokenName: data.tokenName,
-      tokenSymbol: data.tokenSymbol
-    }
-  }
 }

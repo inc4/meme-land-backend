@@ -2,7 +2,7 @@ import dotenv from 'dotenv';
 dotenv.config();
 import mongoose from 'mongoose';
 
-import { PresaleContract, } from '../../adapters/index.js';
+import { PresaleContractAdapter, } from '../../adapters/index.js';
 import { walletModel, WalletService } from '../../domain/index.js';
 import config from '../../../config/index.js';
 
@@ -16,8 +16,8 @@ async function main() {
   }
   
   await mongoose.connect(config.mongo.url, config.mongo.options);
-  const presaleContract = new PresaleContract();
-  const walletService = new WalletService(walletModel, presaleContract);
+  const presaleContractAdapter = new PresaleContractAdapter();
+  const walletService = new WalletService(walletModel, presaleContractAdapter);
 
   const createdWalletPromises = adminWalletList.split(' ').map((wallet) => {
     return walletService.addSingle({ referrer: wallet, wallet: wallet, isAdmin: true });

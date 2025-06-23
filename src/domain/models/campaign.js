@@ -27,8 +27,8 @@ const CampaignSchema = new mongoose.Schema(
     shortDescription2: { type: String },
     bigDescriptionHeader1: { type: String, required: true },
     bigDescriptionHeader2: { type: String, required: true },
-    bigDescriptionText1: { type: String, required: true },
-    bigDescriptionText2: { type: String, required: true },
+    bigDescriptionText1: { type: String },
+    bigDescriptionText2: { type: String },
     projectLogoImage: { type: String, required: true },
     projectCoverImage: { type: String, required: true },
     currentStatus: {

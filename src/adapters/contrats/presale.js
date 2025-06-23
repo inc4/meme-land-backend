@@ -1,9 +1,16 @@
 import * as anchor from "@coral-xyz/anchor";
+import { BN } from "bn.js";
+
 import { PublicKey } from "@solana/web3.js";
 import { TOKEN_PROGRAM_ID, ASSOCIATED_TOKEN_PROGRAM_ID, getAssociatedTokenAddress } from "@solana/spl-token";
 import { networkStateAccountAddress, Orao, randomnessAccountAddress } from "@orao-network/solana-vrf";
 
 import idl from "./mem_land.json" assert { type: 'json' };
+
+// Token Metadata Program ID
+const TOKEN_METADATA_PROGRAM_ID = new anchor.web3.PublicKey(
+  "metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s"
+);
 
 export class PresaleContractAdapter {
   #payer;
@@ -24,8 +31,8 @@ export class PresaleContractAdapter {
 
 
   // wallet == userPubkey ???
-  async addUser(userPubkey) {
-    const userKey = new PublicKey(userPubkey);
+  async addUser(walletAddress) {
+    const userKey = new PublicKey(walletAddress);
     const [operatorRolePda] = PublicKey.findProgramAddressSync(
       [Buffer.from("role"), this.#payer.publicKey.toBuffer()],
       this.#program.programId
@@ -35,7 +42,7 @@ export class PresaleContractAdapter {
       this.#program.programId
     );
 
-    await program.methods
+    await this.#program.methods
       .assignVerifiedUser(userKey)
       .accounts({
         assigner: this.#payer.publicKey,
@@ -58,7 +65,7 @@ export class PresaleContractAdapter {
     } while (!tokeAccounts)
 
     await this.#mintTokens(tokeData, pdas, tokeAccounts.userTokenAccount);
-    return { mintPda };
+    return { mintPda: pdas.mintPda };
   }
 
   async #getToken(pdas) {
@@ -125,17 +132,17 @@ export class PresaleContractAdapter {
     return pdas;
   }
 
-  // name: string, symbol: string, amount: number, receiver: PublicKey
+  // name: string, symbol: string, amount: number, receiver: string
   async #mintTokens({ name, symbol, amount, receiver }, pdas, userTokenAccount) {
     await this.#program.methods
       .mintToken({
         name,
         symbol,
-        mintAmount: new anchor.BN(amount).mul(Math.pow(10, 9)),
+        mintAmount: new BN(amount).mul(new BN(10).pow(new BN(9))),
       })
       .accounts({
         payer: this.#payer.publicKey,
-        receiver,
+        receiver: new anchor.web3.PublicKey(receiver),
         mintAccount: pdas.mintPda,
         adminRoleAccount: pdas.roleAccountPda,
         authorityPda: pdas.authorityPda,
@@ -144,7 +151,7 @@ export class PresaleContractAdapter {
         associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
         systemProgram: anchor.web3.SystemProgram.programId,
       })
-      .signers([payer])
+      .signers([this.#payer])
       .rpc();
   }
 
@@ -152,11 +159,11 @@ export class PresaleContractAdapter {
   //    tokenName : string;
   //    tokenSymbol: string;
   //    step: number; // in ms
-  //    price: number; // in lamports
-  //    minAmount: number; // in lamports
-  //    maxAmount: number; // in lamports
-  //    tokenSupply: number; // in tokens with decimals
-  //    listingPrice: number; // in lamports
+  //    price: number; 
+  //    minAmount: number;
+  //    maxAmount: number; 
+  //    tokenSupply: number; 
+  //    listingPrice: number;
   //    numberOfWallets: number;
   //    solTreasury: PublicKey;
   // }
@@ -166,14 +173,14 @@ export class PresaleContractAdapter {
       .createCampaign({
         tokenName: campaignData.tokenName,
         tokenSymbol: campaignData.tokenSymbol,
-        step: new anchor.BN(campaignData.step),
-        price: new anchor.BN(campaignData.price).mul(Math.pow(10, 9)),
-        minAmount: new anchor.BN(campaignData.minAmount).mul(Math.pow(10, 9)),
-        maxAmount: new anchor.BN(campaignData.maxAmount).mul(Math.pow(10, 9)),
-        tokenSupply: new anchor.BN(campaignData.tokenSupply).mul(Math.pow(10, 9)),
-        listingPrice: new anchor.BN(campaignData.listingPrice).mul(Math.pow(10, 9)),
-        numberOfWallets: new anchor.BN(campaignData.numberOfWallets),
-        solTreasury: campaignData.solTreasury,
+        step: new BN(campaignData.step),
+        price: new BN(campaignData.price).mul(new BN(10).pow(new BN(9))),// convert to lamports
+        minAmount: new BN(campaignData.minAmount).mul(new BN(10).pow(new BN(9))),// convert to lamports
+        maxAmount: new BN(campaignData.maxAmount).mul(new BN(10).pow(new BN(9))),// convert to lamports
+        tokenSupply: new BN(campaignData.tokenSupply).mul(new BN(10).pow(new BN(9))),// convert with decimals
+        listingPrice: new BN(campaignData.listingPrice).mul(new BN(10).pow(new BN(9))),// convert to lamports
+        numberOfWallets: new BN(campaignData.numberOfWallets),
+        solTreasury: new anchor.web3.PublicKey(campaignData.solTreasury),
       })
       .accounts({
         payer: this.#payer.publicKey,

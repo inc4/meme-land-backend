@@ -9,9 +9,9 @@ const config = {};
 
 // presale default settings
 config.presaleDefaults = {
-  changeStatusInterval: env.CHANGE_STATUS_INTERVAL,
-  tokenUnlockInterval: env.TOKEN_UNLOCK_INTERVAL,
-  tokenSupply: env.TOKEN_SUPPLY,
+  changeStatusInterval: Number(env.CHANGE_STATUS_INTERVAL),
+  tokenUnlockInterval: Number(env.TOKEN_UNLOCK_INTERVAL),
+  tokenSupply: Number(env.TOKEN_SUPPLY),
 };
 
 

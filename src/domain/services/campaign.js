@@ -17,7 +17,8 @@ export class CampaignService {
 
   async addCampaign(data) {
     data.tokenSupply = this.#settings.tokenSupply;
-    data.tokenMintAddress = data.tokenMintAddress ?? this.#presaleContract.payer; // FIXME: remove after front end will be ready
+    data.tokenMintAddress = data.tokenMintAddress ?? this.#presaleContract.payer.publicKey.toBase58(); // FIXME: remove after front end will be ready
+    data.tokenUnlockInterval = this.#settings.tokenUnlockInterval;
     const { mintPda } = await this.#presaleContract.createToken(CampaignService.composeTokenData(data));
     data.tokenMintPda = mintPda;
 
@@ -26,7 +27,6 @@ export class CampaignService {
     data.campaignStatsPda = campaignStatsPda;
 
     data.campaignId = uuidv4();
-    data.tokenUnlockInterval = this.#settings.tokenUnlockInterval;
     const startDateTimestamp = new Date(data.presaleStartUTC).getTime()
     data.presaleEndUTC = new Date(startDateTimestamp + this.#settings.changeStatusInterval);
     data.presaleDrawStartUTC = new Date(startDateTimestamp + 2 * this.#settings.changeStatusInterval);
@@ -44,7 +44,7 @@ export class CampaignService {
       receiver: data.tokenMintAddress
     }
   }
-  
+
   static composeCampaignData(data) {
     return {
       tokenName: data.tokenName,

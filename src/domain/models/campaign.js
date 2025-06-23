@@ -29,7 +29,8 @@ const CampaignSchema = new mongoose.Schema(
     bigDescriptionHeader2: { type: String, required: true },
     bigDescriptionText1: { type: String, required: true },
     bigDescriptionText2: { type: String, required: true },
-    coverImage: { type: String, required: true },
+    projectLogoImage: { type: String, required: true },
+    projectCoverImage: { type: String, required: true },
     currentStatus: {
       type: String, required: true, default: 'upcoming', enum: [
         'upcoming',

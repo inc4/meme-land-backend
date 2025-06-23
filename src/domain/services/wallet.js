@@ -12,7 +12,7 @@ export class WalletService {
   }
 
   async addSingle(data) {
-    await this.#presaleContract.addUser(user.wallet);
+    await this.#presaleContract.addUser(data.wallet);
     data.inviteCode = uuidv4();
     return await this.#dataModel.create(data);
   }

@@ -15,6 +15,8 @@ async function main() {
 
   const presale = new PresaleContractAdapter();
 
+  console.log(presale.payer.publicKey.toBase58());
+
   await presale.setCampaignStatus(token.name, token.symbol, campaignStatus);
 
   presale.addEventListener('ParticipateEvent', (event, slot) => {

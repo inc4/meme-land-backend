@@ -10,7 +10,8 @@
  *         - tokenImage
  *         - tokenMintAddress
  *         - projectName
- *         - coverImage
+ *         - projectLogoImage
+ *         - projectCoverImage
  *         - walletAddress
  *         - presalePrice
  *         - listingMultiplier
@@ -63,7 +64,11 @@
  *         bigDescriptionText2:
  *           type: string
  *           example: "Participate in our presale to get early access..."
- *         coverImage:
+ *         projectLogoImage:
+ *           type: string
+ *           format: uri
+ *           example: "ipfs://QmXYZ.../logo.jpg"
+ *         projectCoverImage:
  *           type: string
  *           format: uri
  *           example: "ipfs://QmXYZ.../cover.jpg"

@@ -1,1 +1,1 @@
-export { PresaleContract }  from './presale.js';
+export { PresaleContractAdapter }  from './presale.js';

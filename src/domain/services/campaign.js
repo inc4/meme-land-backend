@@ -6,27 +6,58 @@ export class CampaignService {
   #dataModel;
   #presaleContract;
   #composeDataPage;
+  #settings;
 
-  constructor(dataModel, presaleContract, pageDataComposer) {
+  constructor(dataModel, presaleContract, pageDataComposer, settings) {
     this.#dataModel = dataModel;
     this.#presaleContract = presaleContract;
     this.#composeDataPage = pageDataComposer;
+    this.#settings = settings;
   }
 
   async addCampaign(data) {
+    data.tokenSupply = this.#settings.tokenSupply;
+    data.tokenMintAddress = data.tokenMintAddress ?? this.#presaleContract.payer.publicKey.toBase58(); // FIXME: remove after front end will be ready
+    data.tokenUnlockInterval = this.#settings.tokenUnlockInterval;
+    const { mintPda } = await this.#presaleContract.createToken(CampaignService.composeTokenData(data));
+    data.tokenMintPda = mintPda;
+
+    const { campaignPda, campaignStatsPda } = await this.#presaleContract.createCampaign(CampaignService.composeCampaignData(data));
+    data.campaignPda = campaignPda;
+    data.campaignStatsPda = campaignStatsPda;
+
     data.campaignId = uuidv4();
     const startDateTimestamp = new Date(data.presaleStartUTC).getTime()
-    data.presaleEndUTC = new Date(startDateTimestamp + 24 * 60 * 60 * 1000); // Presale ends 1 day after start
-    data.presaleDrawStartUTC = new Date(startDateTimestamp + 48 * 60 * 60 * 1000); // Draw starts 2 days after start
-    data.presaleDrawEndUTC = new Date(startDateTimestamp + 72 * 60 * 60 * 1000); // Draw ends 3 days after start
-    const campaign = await this.#dataModel.create(data);
-    try {
-      await this.#presaleContract.createCampaign(data);
-    } catch (err) {
-      await this.#dataModel.deleteOne({ campaignId: data.campaignId });
-      throw err;
+    data.presaleEndUTC = new Date(startDateTimestamp + this.#settings.changeStatusInterval);
+    data.presaleDrawStartUTC = new Date(startDateTimestamp + 2 * this.#settings.changeStatusInterval);
+    data.presaleDrawEndUTC = new Date(startDateTimestamp + 3 * this.#settings.changeStatusInterval);
+    return await this.#dataModel.create(data);
+  }
+
+  // request inputs
+  static composeTokenData(data) {
+    return {
+      name: data.tokenName,
+      symbol: data.tokenSymbol,
+      uri: data.tokenImage, // FIXME: uri for metadata ?? format of metadata ???
+      amount: data.tokenSupply,
+      receiver: data.tokenMintAddress
     }
-    return campaign;
+  }
+
+  static composeCampaignData(data) {
+    return {
+      tokenName: data.tokenName,
+      tokenSymbol: data.tokenSymbol,
+      step: data.tokenUnlockInterval,
+      price: data.presalePrice,
+      minAmount: data.minInvestmentSize,
+      maxAmount: data.maxInvestmentSize,
+      tokenSupply: data.tokenSupply,
+      listingPrice: data.listingPrice,
+      numberOfWallets: data.amountOfWallet,
+      solTreasury: data.walletAddress,
+    }
   }
 
   async updateCampaign(campaignId, data) {
@@ -52,14 +83,6 @@ export class CampaignService {
     }
   }
 
-  async addToken(data) {
-    try {
-      return await this.#presaleContract.createToken(data);
-    } catch (err) {
-      return null;
-    }
-  }
-
   async getSingleByCampaignId(campaignId) {
     return await this.#dataModel.findOne({ campaignId });
   }
@@ -70,8 +93,8 @@ export class CampaignService {
 
   async get(conditions, page = 0, limit = 10) {
     if (conditions.currentStatus) {
-      const statusArray = conditions.currentStatus.split('|');
-      conditions.currentStatus = { $in: statusArray };
+      const statusArray = conditions.status.split('|');
+      conditions.status = { $in: statusArray };
     }
     const result = await this.#dataModel.paginate(conditions, {
       page: page + 1, // paginate use 1 as first page

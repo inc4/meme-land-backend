@@ -4,7 +4,7 @@ import { v4 as uuidv4 } from 'uuid';
 import cors from 'cors';
 import mongoose from 'mongoose';
 
-import { WinstonLoggerAdapter, PresaleContract } from '../../adapters/index.js';
+import { WinstonLoggerAdapter, PresaleContractAdapter } from '../../adapters/index.js';
 import {
   walletModel,
   WalletService,
@@ -29,10 +29,10 @@ const logger = new WinstonLoggerAdapter(winston, config.logger);
 
 mongoose.connect(config.mongo.url, config.mongo.options);
 
-const presaleContract = new PresaleContract();
-const walletService = new WalletService(walletModel, presaleContract, DataPageComposer.composePageInfo);
+const presaleContractAdapter = new PresaleContractAdapter();
+const walletService = new WalletService(walletModel, presaleContractAdapter, DataPageComposer.composePageInfo);
 const walletController = new WalletController(walletService, HttpErrorBody.compose, RequestInputsParser.parseRequestQueryParam);
-const campaignService = new CampaignService(campaignModel, presaleContract, DataPageComposer.composePageInfo)
+const campaignService = new CampaignService(campaignModel, presaleContractAdapter, DataPageComposer.composePageInfo, config.presaleDefaults);
 const campaignController = new CampaignController(campaignService, HttpErrorBody.compose, RequestInputsParser.parseRequestQueryParam)
 
 const participationService = new ParticipationService(participationModel, campaignService, DataPageComposer.composePageInfo);

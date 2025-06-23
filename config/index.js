@@ -6,12 +6,22 @@ const env = process.env;
 
 const config = {};
 
+
+// presale default settings
+config.presaleDefaults = {
+  changeStatusInterval: Number(env.CHANGE_STATUS_INTERVAL),
+  tokenUnlockInterval: Number(env.TOKEN_UNLOCK_INTERVAL),
+  tokenSupply: Number(env.TOKEN_SUPPLY),
+};
+
+
 // server
 config.server = {
   port: env.SERVER_PORT,
   url: env.SERVER_URL
 };
 
+// cors
 config.CORS = {
   defaultCorsOptions: {
     origin: (() => {
@@ -55,8 +65,6 @@ if (env.MONGODB_USER && env.MONGODB_PASS) {
   config.mongo.options.user = env.MONGODB_USER;
   config.mongo.options.pass = env.MONGODB_PASS;
 }
-
-config.change_campaign_status_interval = 24 * 60 * 60 * 1000; // 24 hours
 
 
 export default config;

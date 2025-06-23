@@ -61,17 +61,17 @@ export class PresaleContractAdapter {
     let tokeAccounts = null;
     do {
       await new Promise((resolve) => setTimeout(resolve, 2000));
-      tokeAccounts = await this.#getToken(pdas);
+      tokeAccounts = await this.#getToken(pdas, tokeData.receiver);
     } while (!tokeAccounts)
 
     await this.#mintTokens(tokeData, pdas, tokeAccounts.userTokenAccount);
     return { mintPda: pdas.mintPda };
   }
 
-  async #getToken(pdas) {
+ async #getToken(pdas, receiver) {
     const { userTokenAccount, treasureTokenAccount } = await this.#getTokenAccounts(
       pdas.mintPda,
-      this.#payer.publicKey,
+      new anchor.web3.PublicKey(receiver),
       pdas.treasurePda
     );
     return { userTokenAccount, treasureTokenAccount };

@@ -17,10 +17,6 @@ export class CampaignService {
 
   async addCampaign(data) {
     data.tokenSupply = this.#settings.tokenSupply;
-
-    // FIXME: ONLY FOR TEST: remove after CONTRACT WILL BE FIXED
-    data.tokenMintAddress = this.#presaleContract.payer.publicKey.toBase58();
-
     data.tokenUnlockInterval = this.#settings.tokenUnlockInterval;
     const { mintPda } = await this.#presaleContract.createToken(CampaignService.composeTokenData(data));
     data.tokenMintPda = mintPda;

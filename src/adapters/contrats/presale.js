@@ -174,11 +174,11 @@ export class PresaleContractAdapter {
         tokenName: campaignData.tokenName,
         tokenSymbol: campaignData.tokenSymbol,
         step: new BN(campaignData.step),
-        price: new BN(campaignData.price).mul(new BN(10).pow(new BN(9))),// convert to lamports
-        minAmount: new BN(campaignData.minAmount).mul(new BN(10).pow(new BN(9))),// convert to lamports
-        maxAmount: new BN(campaignData.maxAmount).mul(new BN(10).pow(new BN(9))),// convert to lamports
+        price: PresaleContractAdapter.parseAmountToBN(campaignData.price),// convert to lamports
+        minAmount: PresaleContractAdapter.parseAmountToBN(campaignData.minAmount),// convert to lamports
+        maxAmount: PresaleContractAdapter.parseAmountToBN(campaignData.maxAmount),// convert to lamports
         tokenSupply: new BN(campaignData.tokenSupply).mul(new BN(10).pow(new BN(9))),// convert with decimals
-        listingPrice: new BN(campaignData.listingPrice).mul(new BN(10).pow(new BN(9))),// convert to lamports
+        listingPrice: PresaleContractAdapter.parseAmountToBN(campaignData.listingPrice),// convert to lamports
         numberOfWallets: new BN(campaignData.numberOfWallets),
         solTreasury: new anchor.web3.PublicKey(campaignData.solTreasury),
       })
@@ -287,5 +287,22 @@ export class PresaleContractAdapter {
       authorityPda,
       roleAccountPda
     };
+  }
+
+  /**
+   * @param amountStr string
+   * @param decimals number
+   * @returns BN
+   */
+  static parseAmountToBN(amountStr, decimals) {
+    const [whole, fraction = ""] = amountStr.split(".");
+    const normalizedFraction = (fraction + "0".repeat(decimals)).slice(0, decimals);
+    const rawStr = whole + normalizedFraction;
+
+    if (!/^\d+$/.test(rawStr)) {
+      throw new Error(`Invalid amount: ${amountStr}`);
+    }
+
+    return new BN(rawStr);
   }
 }

@@ -1,5 +1,5 @@
 {
-  "address": "CkS3hTfBrkzu6JeqbTXDZuN2X5uQZVzfoU9VJUfN4iVq",
+  "address": "EyA4obBviYScBRjHYVGhkcyeojMQBp6aaAiruc9MGv1A",
   "metadata": {
     "name": "mem_land",
     "version": "0.1.0",
@@ -1203,6 +1203,221 @@
           }
         }
       ]
+    },
+    {
+      "name": "get_user_claim_at",
+      "discriminator": [
+        163,
+        97,
+        230,
+        74,
+        180,
+        112,
+        10,
+        100
+      ],
+      "accounts": [
+        {
+          "name": "user",
+          "signer": true
+        },
+        {
+          "name": "campaign",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  97,
+                  109,
+                  112,
+                  97,
+                  105,
+                  103,
+                  110
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "mint_account"
+              }
+            ]
+          }
+        },
+        {
+          "name": "mint_account",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  109,
+                  105,
+                  110,
+                  116
+                ]
+              },
+              {
+                "kind": "arg",
+                "path": "args.token_name"
+              },
+              {
+                "kind": "arg",
+                "path": "args.token_symbol"
+              }
+            ]
+          }
+        },
+        {
+          "name": "rand_seed",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  111,
+                  114,
+                  97,
+                  111,
+                  45,
+                  118,
+                  114,
+                  102,
+                  45,
+                  114,
+                  97,
+                  110,
+                  100,
+                  111,
+                  109,
+                  110,
+                  101,
+                  115,
+                  115,
+                  45,
+                  114,
+                  101,
+                  113,
+                  117,
+                  101,
+                  115,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "campaign"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                7,
+                71,
+                177,
+                26,
+                250,
+                145,
+                180,
+                209,
+                249,
+                34,
+                242,
+                123,
+                14,
+                186,
+                193,
+                218,
+                178,
+                59,
+                33,
+                41,
+                164,
+                190,
+                243,
+                79,
+                50,
+                164,
+                123,
+                88,
+                245,
+                206,
+                252,
+                120
+              ]
+            }
+          }
+        },
+        {
+          "name": "participant_data",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  97,
+                  114,
+                  116,
+                  105,
+                  99,
+                  105,
+                  112,
+                  97,
+                  110,
+                  116,
+                  95,
+                  100,
+                  97,
+                  116,
+                  97
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "campaign"
+              },
+              {
+                "kind": "account",
+                "path": "user"
+              }
+            ]
+          }
+        },
+        {
+          "name": "campaign_stats",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  115,
+                  116,
+                  97,
+                  116,
+                  115
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "mint_account"
+              }
+            ]
+          }
+        }
+      ],
+      "args": [
+        {
+          "name": "args",
+          "type": {
+            "defined": {
+              "name": "GetUserClaimAtArgs"
+            }
+          }
+        }
+      ],
+      "returns": "u64"
     },
     {
       "name": "get_user_group",
@@ -3298,6 +3513,22 @@
       }
     },
     {
+      "name": "GetUserClaimAtArgs",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "token_name",
+            "type": "string"
+          },
+          {
+            "name": "token_symbol",
+            "type": "string"
+          }
+        ]
+      }
+    },
+    {
       "name": "GetUserGroupArgs",
       "type": {
         "kind": "struct",
@@ -3531,26 +3762,6 @@
     },
     {
       "name": "Role",
-      "docs": [
-        "Role-based access control system for mem-land",
-        "",
-        "Hierarchy:",
-        "- Admin: Full privileges - can assign any role and revoke any role",
-        "- Operator: Can assign VerifiedUser roles (assigned by Admin only)",
-        "- VerifiedUser: Basic verified user (assigned by Admin or Operator)",
-        "",
-        "Assignment Rules:",
-        "- Only Admin can assign Admin role (allows admin delegation)",
-        "- Only Admin can assign Operator role",
-        "- Both Admin and Operator can assign VerifiedUser role",
-        "- Only Admin can revoke roles",
-        "",
-        "Available Instructions:",
-        "- `assign_admin`: Admin assigns Admin role to another user",
-        "- `assign_operator`: Admin assigns Operator role to user",
-        "- `assign_verified_user`: Admin or Operator assigns VerifiedUser role",
-        "- `revoke_role`: Admin revokes any user's role"
-      ],
       "type": {
         "kind": "enum",
         "variants": [

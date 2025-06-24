@@ -216,12 +216,8 @@ export class PresaleContractAdapter {
     this.#program.addEventListener(...params);
   }
 
-  async calculateDistribution(tokeName, tokenSymbol) {
-    const pdas = getPdas(tokeName, tokenSymbol, this.#program.programId, this.#payer.publicKey);
-
-    // FIXME: is it necessary row of code???
-    const campaignData = await this.#program.account.campaign.fetch(pdas.campaignPda);
-
+  async calculateDistribution(tokenName, tokenSymbol) {
+    const pdas = PresaleContractAdapter.getPdas(tokenName, tokenSymbol, this.#program.programId, this.#payer.publicKey);
     const random = randomnessAccountAddress(pdas.campaignPda.toBuffer());
     const config = networkStateAccountAddress();
     const configData = await this.#vrf.account.networkState.fetch(config);
@@ -229,7 +225,7 @@ export class PresaleContractAdapter {
 
     await this.#program.methods
       .calculateDistribution({
-        tokenName: tokeName,
+        tokenName: tokenName,
         tokenSymbol: tokenSymbol,
       })
       .accounts({

@@ -16,21 +16,81 @@ export class CampaignService {
   }
 
   async addCampaign(data) {
-    data.tokenSupply = this.#settings.tokenSupply;
-    data.tokenUnlockInterval = this.#settings.tokenUnlockInterval;
-    const { mintPda } = await this.#presaleContract.createToken(CampaignService.composeTokenData(data));
+    this.#addDefaults(data);
+    // FIXME: validate data.presaleStartUTC and etc, not from the past
+
+    const { mintPda } = await this.#presaleContract.createToken(
+      CampaignService.composeTokenData(data)
+    );
     data.tokenMintPda = mintPda;
 
-    const { campaignPda, campaignStatsPda } = await this.#presaleContract.createCampaign(CampaignService.composeCampaignData(data));
+    const { campaignPda, campaignStatsPda } = await this.#presaleContract.createCampaign(
+      CampaignService.composeCampaignData(data)
+    );
     data.campaignPda = campaignPda;
     data.campaignStatsPda = campaignStatsPda;
 
+    const campaignData = await this.#dataModel.create(data);
+
+    this.#scheduleCampaignEvents(campaignData);
+
+    return campaignData;
+  }
+
+  #scheduleCampaignEvents(campaignData) {
+    const { campaignId } = campaignData;
+    setTimeout(async () => {
+      await this.#presaleContract.setCampaignStatus(
+        campaignData.tokenName,
+        campaignData.tokenSymbol,
+        "presaleOpened"
+      );
+      await this.#dataModel.updateOne({ campaignId }, { currentStatus: "presaleOpened" })
+      console.log(`TIMER EXECUTED: ${campaignData.tokenName} | ${campaignData.tokenSymbol}: "presaleOpened"`);
+    }, new Date(campaignData.presaleStartUTC).getTime() - Date.now());
+    console.log(`TIMER SET: ${campaignData.tokenName} | ${campaignData.tokenSymbol}: "presaleOpened"`);
+
+    setTimeout(async () => {
+      await this.#presaleContract.setCampaignStatus(
+        campaignData.tokenName,
+        campaignData.tokenSymbol,
+        "presaleFinished"
+      );
+      await this.#dataModel.updateOne({ campaignId }, { currentStatus: "presaleFinished" })
+      console.log(`TIMER EXECUTED: ${campaignData.tokenName} | ${campaignData.tokenSymbol}: "presaleFinished"`);
+    }, new Date(campaignData.presaleEndUTC).getTime() - Date.now());
+    console.log(`TIMER SET: ${campaignData.tokenName} | ${campaignData.tokenSymbol}: "presaleFinished"`);
+
+    setTimeout(async () => {
+      await this.#presaleContract.calculateDistribution(
+        campaignData.tokenName,
+        campaignData.tokenSymbol
+      );
+      await this.#dataModel.updateOne({ campaignId }, { currentStatus: "distributionOpened" })
+      console.log(`TIMER EXECUTED: ${campaignData.tokenName} | ${campaignData.tokenSymbol}: "distributionOpened"`);
+    }, new Date(campaignData.presaleDrawStartUTC).getTime() - Date.now());
+    console.log(`TIMER SET: ${campaignData.tokenName} | ${campaignData.tokenSymbol}: "distributionOpened"`);
+
+    setTimeout(async () => {
+      await this.#presaleContract.setCampaignStatus(
+        campaignData.tokenName,
+        campaignData.tokenSymbol,
+        "distributionFinished"
+      );
+      await this.#dataModel.updateOne({ campaignId }, { currentStatus: "distributionFinished" })
+      console.log(`TIMER EXECUTED: ${campaignData.tokenName} | ${campaignData.tokenSymbol}: "distributionFinished"`);
+    }, new Date(campaignData.presaleDrawEndUTC).getTime() - Date.now());
+    console.log(`TIMER SET: ${campaignData.tokenName} | ${campaignData.tokenSymbol}: "distributionFinished"`);
+  }
+
+  #addDefaults(data) {
     data.campaignId = uuidv4();
     const startDateTimestamp = new Date(data.presaleStartUTC).getTime()
     data.presaleEndUTC = new Date(startDateTimestamp + this.#settings.changeStatusInterval);
     data.presaleDrawStartUTC = new Date(startDateTimestamp + 2 * this.#settings.changeStatusInterval);
     data.presaleDrawEndUTC = new Date(startDateTimestamp + 3 * this.#settings.changeStatusInterval);
-    return await this.#dataModel.create(data);
+    data.tokenSupply = this.#settings.tokenSupply;
+    data.tokenUnlockInterval = this.#settings.tokenUnlockInterval;
   }
 
   // request inputs

@@ -8,6 +8,7 @@
  *         - tokenName
  *         - tokenSymbol
  *         - tokenImage
+ *         - tokenMetadataUri
  *         - tokenMintAddress
  *         - projectName
  *         - projectLogoImage
@@ -41,7 +42,11 @@
  *         tokenImage:
  *           type: string
  *           format: uri
- *           example: "ipfs://QmXYZ.../mango.png"
+ *           example: "https://ipfs.io/ipfs/QmAnotherImageCID"
+ *         tokenMetadataUri:
+ *           type: string
+ *           format: uri
+ *           example: "https://ipfs.io/ipfs/QmAnotherImageCID"
  *         tokenMintAddress:
  *           type: string
  *           example: "6xbBfC7pL5oSW7bKgT4hvFGAkdapM2iELyP3QwXsu4wm"

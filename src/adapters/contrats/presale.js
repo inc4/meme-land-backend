@@ -114,7 +114,7 @@ export class PresaleContractAdapter {
       .createToken({
         name,
         symbol,
-        uri: uri || "https://example.com/token-metadata.json",
+        uri: uri || "https://example.com/token-metadata.json",// FIXME: remove after debug
       })
       .accounts({
         payer: this.#payer.publicKey,

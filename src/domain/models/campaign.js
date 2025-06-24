@@ -17,6 +17,7 @@ const CampaignSchema = new mongoose.Schema(
     tokenName: { type: String, required: true, immutable: true },
     tokenSymbol: { type: String, required: true, immutable: true },
     tokenImage: { type: String, required: true, immutable: true },
+    tokenMetadataUri: { type: String },
     tokenMintAddress: { type: String, required: true, immutable: true },
     tokenSupply: { type: Number, required: true, immutable: true },
     tokenMintPda: { type: String, required: true }, // token mintPda returned from presale adapter createToken

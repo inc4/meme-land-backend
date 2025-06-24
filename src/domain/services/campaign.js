@@ -38,7 +38,7 @@ export class CampaignService {
     return {
       name: data.tokenName,
       symbol: data.tokenSymbol,
-      uri: data.tokenImage, // FIXME: uri for metadata ?? format of metadata ???
+      uri: data.tokenMetadataUri,
       amount: data.tokenSupply,
       receiver: data.tokenMintAddress
     }

@@ -92,13 +92,13 @@ jobs:
 
           # Health check
           for i in {1..10}; do
+            sleep 10
             status=$(ssh ec2-user@35.158.146.88 -i ~/.ssh/id_rsa "curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8877/health")
             if [ "$status" -eq 200 ]; then
               echo "Backend is up and running!"
               exit 0
             else
               echo "Waiting for backend to be ready... (attempt $i)"
-              sleep 10
             fi
           done
           echo "Backend did not start successfully after 10 attempts."

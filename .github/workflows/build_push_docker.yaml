@@ -6,6 +6,7 @@ on:
       - main
   release:
     types: [published]
+  workflow_dispatch:
 
 env:
   AWS_REGION: eu-central-1
@@ -69,6 +70,15 @@ jobs:
         run: |
           install -m 600 -D /dev/null ~/.ssh/id_rsa
           echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+
+      - name: Update config files
+        run: |
+          echo "Updating config files on server..."
+          echo "${{ secrets.env }}" > secrets.env
+          echo "${{ secrets.id }}" > id.json
+          ssh-keyscan -H 35.158.146.88 >> ~/.ssh/known_hosts
+          scp -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa secrets.env ec2-user@35.158.146.88:/home/ec2-user/secrets/.env
+          scp -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa id.json ec2-user@35.158.146.88:/home/ec2-user/secrets/id.json
 
       - name: Update server with new image
         run: |

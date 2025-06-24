@@ -12,6 +12,8 @@ const TOKEN_METADATA_PROGRAM_ID = new anchor.web3.PublicKey(
   "metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s"
 );
 
+const SOL_DECIMALS = 9;
+
 export class PresaleContractAdapter {
   #payer;
   #program;
@@ -68,7 +70,7 @@ export class PresaleContractAdapter {
     return { mintPda: pdas.mintPda };
   }
 
- async #getToken(pdas, receiver) {
+  async #getToken(pdas, receiver) {
     const { userTokenAccount, treasureTokenAccount } = await this.#getTokenAccounts(
       pdas.mintPda,
       new anchor.web3.PublicKey(receiver),
@@ -174,11 +176,11 @@ export class PresaleContractAdapter {
         tokenName: campaignData.tokenName,
         tokenSymbol: campaignData.tokenSymbol,
         step: new BN(campaignData.step),
-        price: PresaleContractAdapter.parseAmountToBN(campaignData.price),// convert to lamports
-        minAmount: PresaleContractAdapter.parseAmountToBN(campaignData.minAmount),// convert to lamports
-        maxAmount: PresaleContractAdapter.parseAmountToBN(campaignData.maxAmount),// convert to lamports
+        price: PresaleContractAdapter.parseAmountToBN(campaignData.price, SOL_DECIMALS),// convert to lamports
+        minAmount: PresaleContractAdapter.parseAmountToBN(campaignData.minAmount, SOL_DECIMALS),// convert to lamports
+        maxAmount: PresaleContractAdapter.parseAmountToBN(campaignData.maxAmount, SOL_DECIMALS),// convert to lamports
         tokenSupply: new BN(campaignData.tokenSupply).mul(new BN(10).pow(new BN(9))),// convert with decimals
-        listingPrice: PresaleContractAdapter.parseAmountToBN(campaignData.listingPrice),// convert to lamports
+        listingPrice: PresaleContractAdapter.parseAmountToBN(campaignData.listingPrice, SOL_DECIMALS),// convert to lamports
         numberOfWallets: new BN(campaignData.numberOfWallets),
         solTreasury: new anchor.web3.PublicKey(campaignData.solTreasury),
       })

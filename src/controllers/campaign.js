@@ -386,8 +386,8 @@ export class CampaignController {
       // }
       const dataPage = await this.#campaignService.get(
         this.#parseConditions(req.query.conditions),
-        req.query.page,
-        req.query.limit
+        Number(req.query.page),
+        Number(req.query.limit)
       );
       return res.status(200).send(dataPage);
     } catch (err) {

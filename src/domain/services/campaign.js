@@ -88,7 +88,7 @@ export class CampaignService {
     const startDateTimestamp = new Date(data.presaleStartUTC).getTime()
     data.presaleEndUTC = new Date(startDateTimestamp + this.#settings.changeStatusInterval);
     data.presaleDrawStartUTC = new Date(startDateTimestamp + 2 * this.#settings.changeStatusInterval);
-    data.presaleDrawEndUTC = new Date(startDateTimestamp + 3 * this.#settings.changeStatusInterval);
+    data.presaleDrawEndUTC = new Date(startDateTimestamp + 8 * this.#settings.changeStatusInterval);
     data.tokenSupply = this.#settings.tokenSupply;
     data.tokenUnlockInterval = this.#settings.tokenUnlockInterval;
   }

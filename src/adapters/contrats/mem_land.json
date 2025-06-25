@@ -1,5 +1,5 @@
 {
-  "address": "EyA4obBviYScBRjHYVGhkcyeojMQBp6aaAiruc9MGv1A",
+  "address": "EDVZ7BKosNq4N99ag4RdAMJnfodkByL64fjKYMRRnXyC",
   "metadata": {
     "name": "mem_land",
     "version": "0.1.0",
@@ -3195,6 +3195,10 @@
           {
             "name": "campaign",
             "type": "pubkey"
+          },
+          {
+            "name": "distribution_at",
+            "type": "u64"
           }
         ]
       }
@@ -3755,6 +3759,10 @@
           },
           {
             "name": "campaign",
+            "type": "pubkey"
+          },
+          {
+            "name": "participant_pubkey",
             "type": "pubkey"
           }
         ]

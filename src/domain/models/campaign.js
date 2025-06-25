@@ -59,10 +59,10 @@ const CampaignSchema = new mongoose.Schema(
     maxInvestmentSize: { type: mongoose.Types.Decimal128, required: true, immutable: true },
 
     /* === PRESALE DATES */
-    presaleStartUTC: { type: Date, required: true },
-    presaleEndUTC: { type: Date, required: true },
-    presaleDrawStartUTC: { type: Date, required: true },
-    presaleDrawEndUTC: { type: Date, required: true },
+    presaleStartUTC: { type: Date, required: true , immutable: true },
+    presaleEndUTC: { type: Date, required: true , immutable: true },
+    presaleDrawStartUTC: { type: Date, required: true , immutable: true },
+    presaleDrawEndUTC: { type: Date, required: true , immutable: true },
     tokenUnlockInterval: { type: Number, required: true, immutable: true },
 
     /* === TOKEN INFO LINKS  */

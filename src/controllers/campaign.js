@@ -293,6 +293,9 @@ export class CampaignController {
    */
   async addCampaign(req, res, next) {
     try {
+      if (!req.auth.isAdmin) {
+        return res.status(401).send(this.#composeError(401, 'Unauthorized'));
+      }
       const campaignData = await this.#campaignService.addCampaign(req.body);
       return res.status(201).send(campaignData);
     } catch (err) {
@@ -328,6 +331,10 @@ export class CampaignController {
    */
   async getSingleByCampaignId(req, res, next) {
     try {
+      if (!req.auth.isVerified) {
+        return res.status(401).send(this.#composeError(401, 'Unauthorized'));
+      }
+
       const data = await this.#campaignService.getSingleByCampaignId(
         req.params.campaignId,
       );
@@ -379,11 +386,9 @@ export class CampaignController {
      */
   async get(req, res, next) {
     try {
-      // FIXME: how to authorize ????
-      // if (req.auth.requester) {
-      // check is admin ???
-      //   return res.status(401).send(this.#composeError(401, 'Unauthorized'));
-      // }
+      if (!req.auth.isVerified) {
+        return res.status(401).send(this.#composeError(401, 'Unauthorized'));
+      }
       const dataPage = await this.#campaignService.get(
         this.#parseConditions(req.query.conditions),
         Number(req.query.page),
@@ -432,6 +437,11 @@ export class CampaignController {
    */
   async updateCampaign(req, res, next) {
     try {
+
+      if (!req.auth.isAdmin) {
+        return res.status(401).send(this.#composeError(401, 'Unauthorized'));
+      }
+
       const updated = await this.#campaignService.updateCampaign(
         req.params.campaignId,
         req.body,

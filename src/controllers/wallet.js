@@ -100,7 +100,7 @@ export class WalletController {
    */
   async addSingle(req, res, next) {
     try {
-      if (req.auth.requester != req.body.wallet) {
+      if (req.auth.wallet != req.body.wallet) {
         return res.status(401).send(this.#composeError(401, 'Unauthorized'));
       }
 
@@ -139,7 +139,7 @@ export class WalletController {
    */
   async getSingle(req, res, next) {
     try {
-      if (req.auth.requester != req.params.walletId) {
+      if (req.auth.wallet != req.params.walletId) {
         return res.status(401).send(this.#composeError(401, 'Unauthorized'));
       }
       const data = await this.#service.getSingle(req.params.walletId);
@@ -187,10 +187,9 @@ export class WalletController {
    */
   async get(req, res, next) {
     try {
-      // FIXME: how to authorize ????
-      // if (req.auth.requester != req.params.walletId) {
-      //   return res.status(401).send(this.#composeError(401, 'Unauthorized'));
-      // }
+      if (!req.auth.isVerified) {
+        return res.status(401).send(this.#composeError(401, 'Unauthorized'));
+      }
       const dataPage = await this.#service.get(
         this.#parseConditions(req.query.conditions),
         Number(req.query.page),
@@ -233,7 +232,7 @@ export class WalletController {
    */
   async updateInviteCode(req, res, next) {
     try {
-      if (req.auth.requester != req.params.walletId) {
+      if (req.auth.wallet != req.params.walletId || !req.auth.isVerified) {
         return res.status(401).send(this.#composeError(401, 'Unauthorized'));
       }
       const inviteCode = await this.#service.updateInviteCode(req.params.walletId);

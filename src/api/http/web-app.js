@@ -40,7 +40,7 @@ const participationController = new ParticipationController(participationService
 
 const swaggerController = new SwaggerController();
 
-const auth = new Authentication(HttpErrorBody.compose);
+const auth = new Authentication(walletModel, HttpErrorBody.compose);
 
 // add pre middlewares
 app.use((req, res, next) => {
@@ -67,7 +67,7 @@ app.use(express.json());
 swaggerController.registerRoutes(router);
 
 // add auth
-router.use(auth.retrieveRequesterWallet.bind(auth));
+router.use(auth.retrieveRequester.bind(auth));
 
 
 // register wallet controllers

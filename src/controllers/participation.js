@@ -74,10 +74,9 @@ export class ParticipationController {
    */
   async get(req, res, next) {
     try {
-      // FIXME: how to authorize ????
-      // if (!req.auth.requester) {
-      //   return res.status(401).send(this.#composeError(401, 'Unauthorized'));
-      // }
+      if (!req.auth.isVerified) {
+        return res.status(401).send(this.#composeError(401, 'Unauthorized'));
+      }
       const dataPage = await this.#service.get(
         this.#parseConditions(req.query.conditions),
         Number(req.query.page),

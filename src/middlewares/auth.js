@@ -5,19 +5,26 @@
 
 export class Authentication {
   #composeError;
-  constructor(errorComposer) {
+  #walletModel;
+
+  constructor(walletModel, errorComposer) {
+    this.#walletModel = walletModel;
     this.#composeError = errorComposer;
   }
 
-  retrieveRequesterWallet(req, res, next) {
+  async retrieveRequester(req, res, next) {
     const wallet = req.header('X-Wallet');
 
     if (!wallet) {
       return res.status(401).send(this.#composeError(401, 'Unauthorized'));
     }
 
+    const walletData = await this.#walletModel.findOne({ wallet });
+
     req.auth = {
-      requester: wallet
+      wallet: wallet,
+      isVerified: walletData ? true : false,
+      isAdmin: walletData ? walletData.isAdmin : false,
     };
 
     return next();

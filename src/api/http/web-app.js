@@ -35,7 +35,7 @@ const walletController = new WalletController(walletService, HttpErrorBody.compo
 const campaignService = new CampaignService(campaignModel, presaleContractAdapter, DataPageComposer.composePageInfo, config.presaleDefaults);
 const campaignController = new CampaignController(campaignService, HttpErrorBody.compose, RequestInputsParser.parseRequestQueryParam)
 
-const participationService = new ParticipationService(participationModel, campaignService, DataPageComposer.composePageInfo);
+const participationService = new ParticipationService(participationModel, campaignService, presaleContractAdapter, DataPageComposer.composePageInfo);
 const participationController = new ParticipationController(participationService, HttpErrorBody.compose, RequestInputsParser.parseRequestQueryParam);
 
 const swaggerController = new SwaggerController();

@@ -1,11 +1,12 @@
 import * as anchor from "@coral-xyz/anchor";
+import * as borsh from '@coral-xyz/borsh'
 import { BN } from "bn.js";
 
 import { PublicKey } from "@solana/web3.js";
 import { TOKEN_PROGRAM_ID, ASSOCIATED_TOKEN_PROGRAM_ID, getAssociatedTokenAddress } from "@solana/spl-token";
 import { networkStateAccountAddress, Orao, randomnessAccountAddress } from "@orao-network/solana-vrf";
 
-import idl from "./mem_land.json" assert { type: 'json' };
+import idl from "./mem_land.json" with { type: 'json' };
 
 // Token Metadata Program ID
 const TOKEN_METADATA_PROGRAM_ID = new anchor.web3.PublicKey(
@@ -212,8 +213,45 @@ export class PresaleContractAdapter {
       .rpc();
   }
 
-  addEventListener(...params) {
-    this.#program.addEventListener(...params);
+  readParticipationLogs(callback) {
+    const necessaryEventDiscriminator = idl.events.find((e) => e.name === 'ParticipateEvent').discriminator;
+    const marker = Buffer.from(necessaryEventDiscriminator).toString("base64").replace(/=+$/, "");
+
+    this.#program.provider.connection.onLogs(
+      this.#program.programId,
+      (logs, ctx) => {
+        const matched = logs.logs.find(line => line.includes(marker));
+        if (!matched) return;
+
+        const base64Data = matched.replace("Program data: ", "").replace(/=+$/, "");
+        const eventBuffer = Buffer.from(base64Data, 'base64');
+
+        const ParticipateEventLayout = borsh.struct([
+          borsh.str('token_name'),
+          borsh.str('token_symbol'),
+          borsh.u64('sol_amount'),
+          borsh.u64('token_amount'),
+          borsh.publicKey('mint_account'),
+          borsh.publicKey('campaign'),
+          borsh.publicKey('participant_pubkey')
+        ]);
+
+        const eventDataBuffer = eventBuffer.subarray(8);
+        const event = ParticipateEventLayout.decode(eventDataBuffer);
+        console.log('📦 Event decoded:', event);
+
+        return callback({
+          tokenName: event.token_name,
+          tokenSymbol: event.token_symbol,
+          solAmount: Number(eventData.sol_amount) / 1e9,
+          tokenAmount: Number(eventData.token_amount) / 1e9,
+          mintAccount: event.mint_account.toBase58(),
+          participantPubkey: event.participant_pubkey.toBase58(),
+          campaign: event.campaign.toBase58()
+        })
+      },
+      "confirmed"
+    );
   }
 
   async calculateDistribution(tokenName, tokenSymbol) {
@@ -304,3 +342,4 @@ export class PresaleContractAdapter {
     return new BN(rawStr);
   }
 }
+

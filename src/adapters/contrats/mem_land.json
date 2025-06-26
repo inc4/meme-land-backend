@@ -1,5 +1,5 @@
 {
-  "address": "EDVZ7BKosNq4N99ag4RdAMJnfodkByL64fjKYMRRnXyC",
+  "address": "7MABkSUyS6dfSjum3YSmKDzi1CUJ1LCjqW54Bmgnk2TK",
   "metadata": {
     "name": "mem_land",
     "version": "0.1.0",
@@ -679,21 +679,18 @@
           }
         },
         {
-          "name": "treasure_account",
+          "name": "vault_token_account",
           "writable": true,
           "pda": {
             "seeds": [
               {
                 "kind": "const",
                 "value": [
-                  116,
-                  114,
-                  101,
+                  118,
                   97,
-                  115,
                   117,
-                  114,
-                  101
+                  108,
+                  116
                 ]
               },
               {
@@ -701,96 +698,6 @@
                 "path": "mint_account"
               }
             ]
-          }
-        },
-        {
-          "name": "treasure_token_account",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "account",
-                "path": "treasure_account"
-              },
-              {
-                "kind": "const",
-                "value": [
-                  6,
-                  221,
-                  246,
-                  225,
-                  215,
-                  101,
-                  161,
-                  147,
-                  217,
-                  203,
-                  225,
-                  70,
-                  206,
-                  235,
-                  121,
-                  172,
-                  28,
-                  180,
-                  133,
-                  237,
-                  95,
-                  91,
-                  55,
-                  145,
-                  58,
-                  140,
-                  245,
-                  133,
-                  126,
-                  255,
-                  0,
-                  169
-                ]
-              },
-              {
-                "kind": "account",
-                "path": "mint_account"
-              }
-            ],
-            "program": {
-              "kind": "const",
-              "value": [
-                140,
-                151,
-                37,
-                143,
-                78,
-                36,
-                137,
-                241,
-                187,
-                61,
-                16,
-                41,
-                20,
-                142,
-                13,
-                131,
-                11,
-                90,
-                19,
-                153,
-                218,
-                255,
-                16,
-                132,
-                4,
-                142,
-                123,
-                216,
-                219,
-                233,
-                248,
-                89
-              ]
-            }
           }
         },
         {
@@ -993,6 +900,28 @@
           }
         },
         {
+          "name": "vault_token_account",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  118,
+                  97,
+                  117,
+                  108,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "mint_account"
+              }
+            ]
+          }
+        },
+        {
           "name": "campaign",
           "writable": true,
           "pda": {
@@ -1038,6 +967,10 @@
               }
             ]
           }
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
         },
         {
           "name": "system_program",
@@ -2258,593 +2191,6 @@
           }
         }
       ]
-    },
-    {
-      "name": "transfer_to_treasure",
-      "discriminator": [
-        228,
-        31,
-        197,
-        148,
-        157,
-        62,
-        99,
-        119
-      ],
-      "accounts": [
-        {
-          "name": "payer",
-          "writable": true,
-          "signer": true
-        },
-        {
-          "name": "role_account",
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  114,
-                  111,
-                  108,
-                  101
-                ]
-              },
-              {
-                "kind": "account",
-                "path": "payer"
-              }
-            ]
-          }
-        },
-        {
-          "name": "mint_account",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  109,
-                  105,
-                  110,
-                  116
-                ]
-              },
-              {
-                "kind": "arg",
-                "path": "args.token_name"
-              },
-              {
-                "kind": "arg",
-                "path": "args.token_symbol"
-              }
-            ]
-          }
-        },
-        {
-          "name": "source_token_account",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "account",
-                "path": "payer"
-              },
-              {
-                "kind": "const",
-                "value": [
-                  6,
-                  221,
-                  246,
-                  225,
-                  215,
-                  101,
-                  161,
-                  147,
-                  217,
-                  203,
-                  225,
-                  70,
-                  206,
-                  235,
-                  121,
-                  172,
-                  28,
-                  180,
-                  133,
-                  237,
-                  95,
-                  91,
-                  55,
-                  145,
-                  58,
-                  140,
-                  245,
-                  133,
-                  126,
-                  255,
-                  0,
-                  169
-                ]
-              },
-              {
-                "kind": "account",
-                "path": "mint_account"
-              }
-            ],
-            "program": {
-              "kind": "const",
-              "value": [
-                140,
-                151,
-                37,
-                143,
-                78,
-                36,
-                137,
-                241,
-                187,
-                61,
-                16,
-                41,
-                20,
-                142,
-                13,
-                131,
-                11,
-                90,
-                19,
-                153,
-                218,
-                255,
-                16,
-                132,
-                4,
-                142,
-                123,
-                216,
-                219,
-                233,
-                248,
-                89
-              ]
-            }
-          }
-        },
-        {
-          "name": "treasure_account",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  116,
-                  114,
-                  101,
-                  97,
-                  115,
-                  117,
-                  114,
-                  101
-                ]
-              },
-              {
-                "kind": "account",
-                "path": "mint_account"
-              }
-            ]
-          }
-        },
-        {
-          "name": "treasure_token_account",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "account",
-                "path": "treasure_account"
-              },
-              {
-                "kind": "const",
-                "value": [
-                  6,
-                  221,
-                  246,
-                  225,
-                  215,
-                  101,
-                  161,
-                  147,
-                  217,
-                  203,
-                  225,
-                  70,
-                  206,
-                  235,
-                  121,
-                  172,
-                  28,
-                  180,
-                  133,
-                  237,
-                  95,
-                  91,
-                  55,
-                  145,
-                  58,
-                  140,
-                  245,
-                  133,
-                  126,
-                  255,
-                  0,
-                  169
-                ]
-              },
-              {
-                "kind": "account",
-                "path": "mint_account"
-              }
-            ],
-            "program": {
-              "kind": "const",
-              "value": [
-                140,
-                151,
-                37,
-                143,
-                78,
-                36,
-                137,
-                241,
-                187,
-                61,
-                16,
-                41,
-                20,
-                142,
-                13,
-                131,
-                11,
-                90,
-                19,
-                153,
-                218,
-                255,
-                16,
-                132,
-                4,
-                142,
-                123,
-                216,
-                219,
-                233,
-                248,
-                89
-              ]
-            }
-          }
-        },
-        {
-          "name": "token_program",
-          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
-        },
-        {
-          "name": "associated_token_program",
-          "address": "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL"
-        },
-        {
-          "name": "system_program",
-          "address": "11111111111111111111111111111111"
-        }
-      ],
-      "args": [
-        {
-          "name": "args",
-          "type": {
-            "defined": {
-              "name": "TransferToTreasureArgs"
-            }
-          }
-        }
-      ]
-    },
-    {
-      "name": "withdraw_from_treasure",
-      "discriminator": [
-        223,
-        238,
-        204,
-        12,
-        224,
-        1,
-        29,
-        134
-      ],
-      "accounts": [
-        {
-          "name": "payer",
-          "writable": true,
-          "signer": true
-        },
-        {
-          "name": "role_account",
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  114,
-                  111,
-                  108,
-                  101
-                ]
-              },
-              {
-                "kind": "account",
-                "path": "payer"
-              }
-            ]
-          }
-        },
-        {
-          "name": "mint_account",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  109,
-                  105,
-                  110,
-                  116
-                ]
-              },
-              {
-                "kind": "arg",
-                "path": "args.token_name"
-              },
-              {
-                "kind": "arg",
-                "path": "args.token_symbol"
-              }
-            ]
-          }
-        },
-        {
-          "name": "treasure_account",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  116,
-                  114,
-                  101,
-                  97,
-                  115,
-                  117,
-                  114,
-                  101
-                ]
-              },
-              {
-                "kind": "account",
-                "path": "mint_account"
-              }
-            ]
-          }
-        },
-        {
-          "name": "treasure_token_account",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "account",
-                "path": "treasure_account"
-              },
-              {
-                "kind": "const",
-                "value": [
-                  6,
-                  221,
-                  246,
-                  225,
-                  215,
-                  101,
-                  161,
-                  147,
-                  217,
-                  203,
-                  225,
-                  70,
-                  206,
-                  235,
-                  121,
-                  172,
-                  28,
-                  180,
-                  133,
-                  237,
-                  95,
-                  91,
-                  55,
-                  145,
-                  58,
-                  140,
-                  245,
-                  133,
-                  126,
-                  255,
-                  0,
-                  169
-                ]
-              },
-              {
-                "kind": "account",
-                "path": "mint_account"
-              }
-            ],
-            "program": {
-              "kind": "const",
-              "value": [
-                140,
-                151,
-                37,
-                143,
-                78,
-                36,
-                137,
-                241,
-                187,
-                61,
-                16,
-                41,
-                20,
-                142,
-                13,
-                131,
-                11,
-                90,
-                19,
-                153,
-                218,
-                255,
-                16,
-                132,
-                4,
-                142,
-                123,
-                216,
-                219,
-                233,
-                248,
-                89
-              ]
-            }
-          }
-        },
-        {
-          "name": "destination_token_account",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "account",
-                "path": "recipient"
-              },
-              {
-                "kind": "const",
-                "value": [
-                  6,
-                  221,
-                  246,
-                  225,
-                  215,
-                  101,
-                  161,
-                  147,
-                  217,
-                  203,
-                  225,
-                  70,
-                  206,
-                  235,
-                  121,
-                  172,
-                  28,
-                  180,
-                  133,
-                  237,
-                  95,
-                  91,
-                  55,
-                  145,
-                  58,
-                  140,
-                  245,
-                  133,
-                  126,
-                  255,
-                  0,
-                  169
-                ]
-              },
-              {
-                "kind": "account",
-                "path": "mint_account"
-              }
-            ],
-            "program": {
-              "kind": "const",
-              "value": [
-                140,
-                151,
-                37,
-                143,
-                78,
-                36,
-                137,
-                241,
-                187,
-                61,
-                16,
-                41,
-                20,
-                142,
-                13,
-                131,
-                11,
-                90,
-                19,
-                153,
-                218,
-                255,
-                16,
-                132,
-                4,
-                142,
-                123,
-                216,
-                219,
-                233,
-                248,
-                89
-              ]
-            }
-          }
-        },
-        {
-          "name": "recipient"
-        },
-        {
-          "name": "token_program",
-          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
-        },
-        {
-          "name": "associated_token_program",
-          "address": "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL"
-        },
-        {
-          "name": "system_program",
-          "address": "11111111111111111111111111111111"
-        }
-      ],
-      "args": [
-        {
-          "name": "args",
-          "type": {
-            "defined": {
-              "name": "WithdrawFromTreasureArgs"
-            }
-          }
-        }
-      ]
     }
   ],
   "accounts": [
@@ -2924,19 +2270,6 @@
         3,
         244,
         226
-      ]
-    },
-    {
-      "name": "Treasure",
-      "discriminator": [
-        98,
-        92,
-        220,
-        45,
-        191,
-        149,
-        105,
-        178
       ]
     }
   ],
@@ -3070,44 +2403,53 @@
         211,
         81
       ]
-    },
-    {
-      "name": "TransferToTreasureEvent",
-      "discriminator": [
-        248,
-        7,
-        80,
-        84,
-        52,
-        239,
-        231,
-        197
-      ]
-    },
-    {
-      "name": "WithdrawFromTreasureEvent",
-      "discriminator": [
-        90,
-        149,
-        183,
-        205,
-        94,
-        29,
-        188,
-        236
-      ]
     }
   ],
   "errors": [
     {
       "code": 6000,
-      "name": "UnauthorizedAccess",
-      "msg": "Unauthorized access - Insufficient role privileges"
+      "name": "CampaignNotActive",
+      "msg": "Presale not active"
     },
     {
       "code": 6001,
-      "name": "CannotRevokeOwnRole",
-      "msg": "Cannot revoke your own role"
+      "name": "InvalidAmount",
+      "msg": "Invalid amount - must be within min/max limits"
+    },
+    {
+      "code": 6002,
+      "name": "MathOverflow",
+      "msg": "Math overflow"
+    },
+    {
+      "code": 6003,
+      "name": "AlreadyClaimed",
+      "msg": "Tokens already claimed"
+    },
+    {
+      "code": 6004,
+      "name": "ClaimNotYetAvailable",
+      "msg": "Claim not yet available"
+    },
+    {
+      "code": 6005,
+      "name": "InsufficientTreasuryBalance",
+      "msg": "Insufficient treasury balance"
+    },
+    {
+      "code": 6006,
+      "name": "UserGroupCalculationFailed",
+      "msg": "Failed to calculate user group"
+    },
+    {
+      "code": 6007,
+      "name": "MaxTokensReached",
+      "msg": "Max tokens reached"
+    },
+    {
+      "code": 6008,
+      "name": "MaxParticipantsReached",
+      "msg": "Max participants reached"
     }
   ],
   "types": [
@@ -3258,6 +2600,10 @@
           },
           {
             "name": "mint_account",
+            "type": "pubkey"
+          },
+          {
+            "name": "token_account",
             "type": "pubkey"
           }
         ]
@@ -3852,138 +3198,6 @@
           },
           {
             "name": "campaign",
-            "type": "pubkey"
-          }
-        ]
-      }
-    },
-    {
-      "name": "TransferToTreasureArgs",
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "token_name",
-            "type": "string"
-          },
-          {
-            "name": "token_symbol",
-            "type": "string"
-          },
-          {
-            "name": "amount",
-            "type": "u64"
-          }
-        ]
-      }
-    },
-    {
-      "name": "TransferToTreasureEvent",
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "token_name",
-            "type": "string"
-          },
-          {
-            "name": "token_symbol",
-            "type": "string"
-          },
-          {
-            "name": "amount",
-            "type": "u64"
-          },
-          {
-            "name": "mint_account",
-            "type": "pubkey"
-          },
-          {
-            "name": "treasure_account",
-            "type": "pubkey"
-          }
-        ]
-      }
-    },
-    {
-      "name": "Treasure",
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "mint",
-            "type": "pubkey"
-          },
-          {
-            "name": "total_deposited",
-            "type": "u64"
-          },
-          {
-            "name": "total_withdrawn",
-            "type": "u64"
-          },
-          {
-            "name": "created_at",
-            "type": "i64"
-          },
-          {
-            "name": "bump",
-            "type": "u8"
-          }
-        ]
-      }
-    },
-    {
-      "name": "WithdrawFromTreasureArgs",
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "token_name",
-            "type": "string"
-          },
-          {
-            "name": "token_symbol",
-            "type": "string"
-          },
-          {
-            "name": "amount",
-            "type": "u64"
-          },
-          {
-            "name": "recipient",
-            "type": "pubkey"
-          }
-        ]
-      }
-    },
-    {
-      "name": "WithdrawFromTreasureEvent",
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "token_name",
-            "type": "string"
-          },
-          {
-            "name": "token_symbol",
-            "type": "string"
-          },
-          {
-            "name": "amount",
-            "type": "u64"
-          },
-          {
-            "name": "mint_account",
-            "type": "pubkey"
-          },
-          {
-            "name": "treasure_account",
-            "type": "pubkey"
-          },
-          {
-            "name": "recipient",
             "type": "pubkey"
           }
         ]

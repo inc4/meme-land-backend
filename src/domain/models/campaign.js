@@ -20,7 +20,8 @@ const CampaignSchema = new mongoose.Schema(
     tokenMetadataUri: { type: String, required: true, immutable: true },
     tokenMintAddress: { type: String, required: true, immutable: true },
     tokenSupply: { type: Number, required: true, immutable: true },
-    tokenMintPda: { type: String, required: true }, // token mintPda returned from presale adapter createToken
+    tokenMintPda: { type: String, required: true, immutable: true }, // token mintPda returned from presale adapter createToken
+    tokenDistributionAccount: { type: String, required: true, immutable: true },
 
     /* === PROJECT INFO */
     projectName: { type: String, required: true },
@@ -45,9 +46,11 @@ const CampaignSchema = new mongoose.Schema(
 
     walletAddress: { type: String, required: true, immutable: true },
 
+    allTimeHigh: { type: mongoose.Types.Decimal128, default: 0 },
+
     /* === ON-CHAIN DATA */
-    campaignPda: { type: String, required: true },
-    campaignStatsPda: { type: String, required: true },
+    campaignPda: { type: String, required: true, immutable: true  },
+    campaignStatsPda: { type: String, required: true, immutable: true  },
 
     /* === PRESALE DATA */
     presalePrice: { type: mongoose.Types.Decimal128, required: true, immutable: true },
@@ -84,14 +87,6 @@ const CampaignSchema = new mongoose.Schema(
     liquidity: { type: mongoose.Types.Decimal128, required: true },
     pieChartTeam: { type: mongoose.Types.Decimal128, required: true },
     marketing: { type: mongoose.Types.Decimal128, required: true },
-
-    /* === TOKENOMICS  */
-    tokenomics: [
-      {
-        item: { type: String },
-        percent: { type: mongoose.Types.Decimal128, required: true },
-      }
-    ],
 
     /* === SOCIAL LINKS  */
     twitter: { type: String },

@@ -24,11 +24,12 @@ export class CampaignService {
     );
     data.tokenMintPda = mintPda;
 
-    const { campaignPda, campaignStatsPda } = await this.#presaleContract.createCampaign(
+    const { campaignPda, campaignStatsPda, tokenAccount } = await this.#presaleContract.createCampaign(
       CampaignService.composeCampaignData(data)
     );
     data.campaignPda = campaignPda;
     data.campaignStatsPda = campaignStatsPda;
+    data.tokenDistributionAccount = tokenAccount;
 
     const campaignData = await this.#dataModel.create(data);
 
@@ -112,7 +113,8 @@ export class CampaignService {
       price: data.presalePrice,
       minAmount: data.minInvestmentSize,
       maxAmount: data.maxInvestmentSize,
-      tokenSupply: data.tokenSupply,
+      // FIXME: maybe use decimal math ?
+      tokenSupply: data.tokenSupply * (100 - data.tokensSentToLP) / 100,
       listingPrice: data.listingPrice,
       numberOfWallets: data.amountOfWallet,
       solTreasury: data.walletAddress,

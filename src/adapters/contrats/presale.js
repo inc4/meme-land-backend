@@ -65,7 +65,10 @@ export class PresaleContractAdapter {
     let tokeAccounts = null;
     do {
       await new Promise((resolve) => setTimeout(resolve, 2000));
-      tokeAccounts = await this.#getToken(pdas, tokeData.receiver);
+      try {
+        tokeAccounts = await this.#getToken(pdas, tokeData.receiver);
+      } catch { };
+
     } while (!tokeAccounts)
 
     await this.#mintTokens(tokeData, pdas, tokeAccounts.userTokenAccount);
@@ -86,7 +89,7 @@ export class PresaleContractAdapter {
     const userTokenAccount = await getAssociatedTokenAddress(
       mintPda,
       userPubkey,
-      false,
+      true,
       TOKEN_PROGRAM_ID,
       ASSOCIATED_TOKEN_PROGRAM_ID
     );
@@ -190,13 +193,33 @@ export class PresaleContractAdapter {
         payer: this.#payer.publicKey,
         roleAccount: pdas.roleAccountPda,
         mintAccount: pdas.mintPda,
+        vaultTokenAccount: pdas.vaultTokenAccountPda,
         campaign: pdas.campaignPda,
         campaignStats: pdas.campaignStatsPda,
+        tokenProgram: TOKEN_PROGRAM_ID,
         systemProgram: anchor.web3.SystemProgram.programId,
       })
       .signers([this.#payer])
       .rpc();
-    return { campaignPda: pdas.campaignPda, campaignStatsPda: pdas.campaignStatsPda };
+
+    let campaignInfo = null;
+    do {
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+      try {
+        campaignInfo = await this.#getCampaignInfo(pdas);
+      } catch { };
+
+    } while (!campaignInfo)
+
+    return {
+      campaignPda: pdas.campaignPda,
+      campaignStatsPda: pdas.campaignStatsPda,
+      tokenAccount: campaignInfo.tokenAccount
+    };
+  }
+
+  async #getCampaignInfo(pdas) {
+    return await this.#program.account.campaign.fetch(pdas.campaignPda);
   }
 
   async setCampaignStatus(tokenName, tokenSymbol, status) {
@@ -281,6 +304,7 @@ export class PresaleContractAdapter {
       .rpc();
   }
 
+
   static getPdas(tokenName, tokenSymbol, programId, userPubkey) {
     const [mintPda] = PublicKey.findProgramAddressSync(
       [Buffer.from("mint"), Buffer.from(tokenName), Buffer.from(tokenSymbol)],
@@ -307,6 +331,11 @@ export class PresaleContractAdapter {
       programId
     );
 
+    const [vaultTokenAccountPda] = PublicKey.findProgramAddressSync(
+      [Buffer.from("vault"), mintPda.toBuffer()],
+      programId
+    );
+
     let roleAccountPda;
     if (userPubkey) {
       [roleAccountPda] = PublicKey.findProgramAddressSync(
@@ -321,7 +350,8 @@ export class PresaleContractAdapter {
       campaignStatsPda,
       treasurePda,
       authorityPda,
-      roleAccountPda
+      vaultTokenAccountPda,
+      roleAccountPda,
     };
   }
 

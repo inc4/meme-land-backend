@@ -81,6 +81,10 @@
  *           description: SOL address controlling the campaign. IMMUTABLE
  *           type: string
  *           example: "6xbBfC7pL5oSW7bKgT4hvFGAkdapM2iELyP3QwXsu4wm"
+ *         allTimeHigh:
+ *           type: number
+ *           format: double
+ *           example: 0.001
  *         presalePrice:
  *           type: number
  *           format: double
@@ -169,19 +173,6 @@
  *           type: number
  *           format: double
  *           example: 10
- *         tokenomics:
- *           type: array
- *           description: Tokenomics breakdown. ⚠️ This array is **fully overwritten** during update — send the complete array, not partial changes.
- *           items:
- *             type: object
- *             properties:
- *               item:
- *                 type: string
- *                 example: "Advisors"
- *               percent:
- *                 type: number
- *                 format: double
- *                 example: 5
  *         twitter:
  *           type: string
  *           format: uri
@@ -242,6 +233,9 @@
  *               type: number
  *               example: 1000000000
  *             tokenMintPda:
+ *               type: string
+ *               example: "6xbBfC7pL5oSW7bKgT4hvFGAkdapM2iELyP3QwXsu4wm"
+ *             tokenDistributionAccount:
  *               type: string
  *               example: "6xbBfC7pL5oSW7bKgT4hvFGAkdapM2iELyP3QwXsu4wm"
  */

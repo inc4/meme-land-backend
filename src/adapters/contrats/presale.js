@@ -196,6 +196,7 @@ export class PresaleContractAdapter {
       })
       .signers([this.#payer])
       .rpc();
+      // FIXME: return extra tokenAccount
     return { campaignPda: pdas.campaignPda, campaignStatsPda: pdas.campaignStatsPda };
   }
 

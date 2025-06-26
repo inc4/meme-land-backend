@@ -245,9 +245,9 @@ export class PresaleContractAdapter {
         return callback({
           tokenName: event.token_name,
           tokenSymbol: event.token_symbol,
-          solAmount: event.sol_amount.toString(),
+          solAmount: new Decimal(event.sol_amount.toString()).div('1e9'),
           tokenAmount: new Decimal(event.token_amount.toString()).div('1e9'),
-          mintAccount: new Decimal(event.mint_account.toString()).div('1e9'),
+          mintAccount: event.mint_account.toBase58(),
           participationAccount: event.participant_pubkey.toBase58(),
           campaign: event.campaign.toBase58()
         })

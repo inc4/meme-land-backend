@@ -1,6 +1,5 @@
 import { v4 as uuidv4 } from 'uuid';
 
-
 export class ParticipationService {
   #dataModel;
   #campaignService;
@@ -26,14 +25,12 @@ export class ParticipationService {
   }
 
   async #handleParticipationEvent(eventData) {
-    console.log("Event received", eventData);
-
     const cacheKey = `${eventData.tokenName}_${eventData.tokenSymbol}`;
     let campaign = this.#campaignCache.get(cacheKey);
 
     if (!campaign) {
       const campaigns = await this.#campaignService.get(
-        { tokenSymbol: eventData.tokenSymbol },
+        { tokenSymbol: eventData.tokenSymbol, tokenName: eventData.tokenName },
         0,
         1
       );
@@ -52,9 +49,9 @@ export class ParticipationService {
     const record = {
       participationId: uuidv4(),
       campaignId: campaign.campaignId,
-      wallet: eventData.participantPubkey,
+      wallet: eventData.participationAccount,
       solSpent: eventData.solAmount,
-      tokenAllocation: eventData.tokenAmount
+      tokenAllocation: eventData.tokenAmount,
     };
 
     await this.#dataModel.create(record);

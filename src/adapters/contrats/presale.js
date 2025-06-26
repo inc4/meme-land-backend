@@ -1,5 +1,6 @@
 import * as anchor from "@coral-xyz/anchor";
 import * as borsh from '@coral-xyz/borsh'
+import Decimal from 'decimal.js';
 import { BN } from "bn.js";
 
 import { PublicKey } from "@solana/web3.js";
@@ -239,14 +240,15 @@ export class PresaleContractAdapter {
         const eventDataBuffer = eventBuffer.subarray(8);
         const event = ParticipateEventLayout.decode(eventDataBuffer);
         console.log('📦 Event decoded:', event);
+        console.log('📦 Event decoded:', typeof event.tokenAmount);
 
         return callback({
           tokenName: event.token_name,
           tokenSymbol: event.token_symbol,
-          solAmount: Number(eventData.sol_amount) / 1e9,
-          tokenAmount: Number(eventData.token_amount) / 1e9,
-          mintAccount: event.mint_account.toBase58(),
-          participantPubkey: event.participant_pubkey.toBase58(),
+          solAmount: event.sol_amount.toString(),
+          tokenAmount: new Decimal(event.token_amount.toString()).div('1e9'),
+          mintAccount: new Decimal(event.mint_account.toString()).div('1e9'),
+          participationAccount: event.participant_pubkey.toBase58(),
           campaign: event.campaign.toBase58()
         })
       },

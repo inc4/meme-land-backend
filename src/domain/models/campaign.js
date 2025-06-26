@@ -14,10 +14,10 @@ const CampaignSchema = new mongoose.Schema(
     },
 
     /* === TOKEN DATA */
-    tokenName: { type: String, required: true, immutable: true },
-    tokenSymbol: { type: String, required: true, immutable: true },
+    tokenName: { type: String, required: true, immutable: true, unique: true, },
+    tokenSymbol: { type: String, required: true, immutable: true, unique: true },
     tokenImage: { type: String, required: true, immutable: true },
-    tokenMetadataUri: { type: String, required: true, immutable: true  },
+    tokenMetadataUri: { type: String, required: true, immutable: true },
     tokenMintAddress: { type: String, required: true, immutable: true },
     tokenSupply: { type: Number, required: true, immutable: true },
     tokenMintPda: { type: String, required: true }, // token mintPda returned from presale adapter createToken
@@ -59,10 +59,10 @@ const CampaignSchema = new mongoose.Schema(
     maxInvestmentSize: { type: mongoose.Types.Decimal128, required: true, immutable: true },
 
     /* === PRESALE DATES */
-    presaleStartUTC: { type: Date, required: true , immutable: true },
-    presaleEndUTC: { type: Date, required: true , immutable: true },
-    presaleDrawStartUTC: { type: Date, required: true , immutable: true },
-    presaleDrawEndUTC: { type: Date, required: true , immutable: true },
+    presaleStartUTC: { type: Date, required: true, immutable: true },
+    presaleEndUTC: { type: Date, required: true, immutable: true },
+    presaleDrawStartUTC: { type: Date, required: true, immutable: true },
+    presaleDrawEndUTC: { type: Date, required: true, immutable: true },
     tokenUnlockInterval: { type: Number, required: true, immutable: true },
 
     /* === TOKEN INFO LINKS  */

@@ -18,6 +18,12 @@ const participationSchema = new mongoose.Schema({
     index: true,
     required: true,
   },
+  distributionPosition: {
+    type: Number,
+    required: true,
+    default: 100000,
+    index: true,
+  },
   solSpent: {
     type: mongoose.Types.Decimal128,
     required: true,

@@ -1,24 +1,19 @@
 import { v4 as uuidv4 } from 'uuid';
 
-
 export class ParticipationService {
   #dataModel;
   #campaignService;
+  #presaleContract;
   #composeDataPage;
+  #campaignCache;
 
-  constructor(dataModel, campaignService, pageDataComposer) {
+  constructor(dataModel, campaignService, presaleContract, pageDataComposer) {
     this.#dataModel = dataModel;
     this.#campaignService = campaignService;
+    this.#presaleContract = presaleContract;
     this.#composeDataPage = pageDataComposer;
-    // FIXME: read all events (since last read time)??? and save using addBatch
-  }
-
-  async addBatch(dataBatch) {
-    // FIXME: implement
-    // read all campaigns(this.#campaignService) ??? 
-    // retrieve campaignId for each  participation from retrieved campaigns from db
-    // gen participationId for each participation in batch = uuidv4()
-    // save all participation from batch using saveMany, splitted by size-controlled batches
+    this.#campaignCache = new Map();
+    this.#presaleContract.readParticipationLogs(this.#handleParticipationEvent.bind(this))
   }
 
   async get(conditions, page = 0, limit = 10) {
@@ -30,5 +25,35 @@ export class ParticipationService {
     return this.#composeDataPage(result);
   }
 
+  async #handleParticipationEvent(eventData) {
+    console.log('Participation event: ', eventData);
+    
+    const cacheKey = `${eventData.tokenName}_${eventData.tokenSymbol}`;
+    let campaignId = this.#campaignCache.get(cacheKey);
 
+    if (!campaignId) {
+      const campaigns = await this.#campaignService.get(
+        { tokenSymbol: eventData.tokenSymbol, tokenName: eventData.tokenName },
+        0,
+        1
+      );
+      campaignId = campaigns.page.data[0]?.campaignId;
+
+      if (!campaignId) {
+        throw new Error(`Campaign "${cacheKey}" not found`);
+      }
+
+      this.#campaignCache.set(cacheKey, campaignId);
+    } 
+
+    const record = {
+      participationId: uuidv4(),
+      campaignId,
+      wallet: eventData.participationAccount,
+      solSpent: eventData.solAmount,
+      tokenAllocation: eventData.tokenAmount,
+    };
+
+    await this.#dataModel.create(record);
+  }
 }

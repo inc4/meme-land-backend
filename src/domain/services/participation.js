@@ -4,21 +4,16 @@ import { v4 as uuidv4 } from 'uuid';
 export class ParticipationService {
   #dataModel;
   #campaignService;
+  #presaleContract;
   #composeDataPage;
+  #campaignCache = new Map();
 
-  constructor(dataModel, campaignService, pageDataComposer) {
+  constructor(dataModel, campaignService, presaleContract, pageDataComposer) {
     this.#dataModel = dataModel;
     this.#campaignService = campaignService;
+    this.#presaleContract = presaleContract;
     this.#composeDataPage = pageDataComposer;
-    // FIXME: read all events (since last read time)??? and save using addBatch
-  }
-
-  async addBatch(dataBatch) {
-    // FIXME: implement
-    // read all campaigns(this.#campaignService) ??? 
-    // retrieve campaignId for each  participation from retrieved campaigns from db
-    // gen participationId for each participation in batch = uuidv4()
-    // save all participation from batch using saveMany, splitted by size-controlled batches
+    this.#presaleContract.readParticipationLogs(this.#handleParticipationEvent.bind(this))
   }
 
   async get(conditions, page = 0, limit = 10) {
@@ -30,5 +25,38 @@ export class ParticipationService {
     return this.#composeDataPage(result);
   }
 
+  async #handleParticipationEvent(eventData) {
+    console.log("Event received", eventData);
 
+    const cacheKey = `${eventData.tokenName}_${eventData.tokenSymbol}`;
+    let campaign = this.#campaignCache.get(cacheKey);
+
+    if (!campaign) {
+      const campaigns = await this.#campaignService.get(
+        { tokenSymbol: eventData.tokenSymbol },
+        0,
+        1
+      );
+
+      if (!campaigns.data.length) {
+        throw new Error(`Campaign with tokenSymbol "${eventData.tokenSymbol}" not found`);
+      }
+
+      campaign = campaigns.data[0];
+      this.#campaignCache.set(cacheKey, campaign);
+      console.log("🎯 Fetched and cached campaign:", campaign);
+    } else {
+      console.log("🧠 Campaign from cache:", campaign);
+    }
+
+    const record = {
+      participationId: uuidv4(),
+      campaignId: campaign.campaignId,
+      wallet: eventData.participantPubkey,
+      solSpent: eventData.solAmount,
+      tokenAllocation: eventData.tokenAmount
+    };
+
+    await this.#dataModel.create(record);
+  }
 }

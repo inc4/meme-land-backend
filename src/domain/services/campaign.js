@@ -114,7 +114,7 @@ export class CampaignService {
       minAmount: data.minInvestmentSize,
       maxAmount: data.maxInvestmentSize,
       // FIXME: maybe use decimal math ?
-      tokenSupply: data.tokenSupply * (100 - data.tokensSentToLP),
+      tokenSupply: data.tokenSupply * (100 - data.tokensSentToLP) / 100,
       listingPrice: data.listingPrice,
       numberOfWallets: data.amountOfWallet,
       solTreasury: data.walletAddress,

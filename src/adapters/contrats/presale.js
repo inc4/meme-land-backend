@@ -239,8 +239,6 @@ export class PresaleContractAdapter {
 
         const eventDataBuffer = eventBuffer.subarray(8);
         const event = ParticipateEventLayout.decode(eventDataBuffer);
-        console.log('📦 Event decoded:', event);
-        console.log('📦 Event decoded:', typeof event.tokenAmount);
 
         return callback({
           tokenName: event.token_name,

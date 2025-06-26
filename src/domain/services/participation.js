@@ -5,13 +5,14 @@ export class ParticipationService {
   #campaignService;
   #presaleContract;
   #composeDataPage;
-  #campaignCache = new Map();
+  #campaignCache;
 
   constructor(dataModel, campaignService, presaleContract, pageDataComposer) {
     this.#dataModel = dataModel;
     this.#campaignService = campaignService;
     this.#presaleContract = presaleContract;
     this.#composeDataPage = pageDataComposer;
+    this.#campaignCache = new Map();
     this.#presaleContract.readParticipationLogs(this.#handleParticipationEvent.bind(this))
   }
 
@@ -25,30 +26,29 @@ export class ParticipationService {
   }
 
   async #handleParticipationEvent(eventData) {
+    console.log('Participation event: ', eventData);
+    
     const cacheKey = `${eventData.tokenName}_${eventData.tokenSymbol}`;
-    let campaign = this.#campaignCache.get(cacheKey);
+    let campaignId = this.#campaignCache.get(cacheKey);
 
-    if (!campaign) {
+    if (!campaignId) {
       const campaigns = await this.#campaignService.get(
         { tokenSymbol: eventData.tokenSymbol, tokenName: eventData.tokenName },
         0,
         1
       );
+      campaignId = campaigns.page.data[0]?.campaignId;
 
-      if (!campaigns.data.length) {
-        throw new Error(`Campaign with tokenSymbol "${eventData.tokenSymbol}" not found`);
+      if (!campaignId) {
+        throw new Error(`Campaign "${cacheKey}" not found`);
       }
 
-      campaign = campaigns.data[0];
-      this.#campaignCache.set(cacheKey, campaign);
-      console.log("🎯 Fetched and cached campaign:", campaign);
-    } else {
-      console.log("🧠 Campaign from cache:", campaign);
-    }
+      this.#campaignCache.set(cacheKey, campaignId);
+    } 
 
     const record = {
       participationId: uuidv4(),
-      campaignId: campaign.campaignId,
+      campaignId,
       wallet: eventData.participationAccount,
       solSpent: eventData.solAmount,
       tokenAllocation: eventData.tokenAmount,

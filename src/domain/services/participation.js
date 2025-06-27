@@ -27,7 +27,7 @@ export class ParticipationService {
 
   async #handleParticipationEvent(eventData) {
     console.log('Participation event: ', eventData);
-    
+
     const cacheKey = `${eventData.tokenName}_${eventData.tokenSymbol}`;
     let campaignId = this.#campaignCache.get(cacheKey);
 
@@ -44,7 +44,7 @@ export class ParticipationService {
       }
 
       this.#campaignCache.set(cacheKey, campaignId);
-    } 
+    }
 
     const record = {
       participationId: uuidv4(),
@@ -55,5 +55,13 @@ export class ParticipationService {
     };
 
     await this.#dataModel.create(record);
+
+    try {
+      await this.#dataModel.create(record);
+    } catch (err) {
+      if (err.code !== 11000) {
+        throw err;
+      }
+    }
   }
 }

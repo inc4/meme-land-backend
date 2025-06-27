@@ -222,13 +222,15 @@ export class PresaleContractAdapter {
     return await this.#program.account.campaign.fetch(pdas.campaignPda);
   }
 
-  async setCampaignStatus(tokenName, tokenSymbol, status) {
+  async setCampaignStatus(tokenName, tokenSymbol, status, timestamp) {
     const pdas = PresaleContractAdapter.getPdas(tokenName, tokenSymbol, this.#program.programId);
+
     await this.#program.methods
       .setStatus({
         tokenName,
         tokenSymbol,
         status: { [status]: {} },
+        distributeAt: timestamp ? new BN(timestamp) : null,
       })
       .accounts({
         campaign: pdas.campaignPda,

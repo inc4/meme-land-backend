@@ -36,8 +36,13 @@ const participationSchema = new mongoose.Schema({
     type: Date,
     default: Date.now,
   },
-});
+},
+  {
+    autoIndex: true
+  }
+);
 
+participationSchema.index({ campaignId: 1, wallet: 1 }, { unique: true });
 participationSchema.plugin(mongoosePaginate);
 
 export const participationModel = mongoose.model('Participation', participationSchema);

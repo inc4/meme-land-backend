@@ -1,5 +1,5 @@
 {
-  "address": "7MABkSUyS6dfSjum3YSmKDzi1CUJ1LCjqW54Bmgnk2TK",
+  "address": "HK8wKMM7eW9CvmnwWiZsqgGVyyMFVrCxMdfqbsyjEczY",
   "metadata": {
     "name": "mem_land",
     "version": "0.1.0",
@@ -2408,48 +2408,13 @@
   "errors": [
     {
       "code": 6000,
-      "name": "CampaignNotActive",
-      "msg": "Presale not active"
+      "name": "UnauthorizedAccess",
+      "msg": "Unauthorized access - Insufficient role privileges"
     },
     {
       "code": 6001,
-      "name": "InvalidAmount",
-      "msg": "Invalid amount - must be within min/max limits"
-    },
-    {
-      "code": 6002,
-      "name": "MathOverflow",
-      "msg": "Math overflow"
-    },
-    {
-      "code": 6003,
-      "name": "AlreadyClaimed",
-      "msg": "Tokens already claimed"
-    },
-    {
-      "code": 6004,
-      "name": "ClaimNotYetAvailable",
-      "msg": "Claim not yet available"
-    },
-    {
-      "code": 6005,
-      "name": "InsufficientTreasuryBalance",
-      "msg": "Insufficient treasury balance"
-    },
-    {
-      "code": 6006,
-      "name": "UserGroupCalculationFailed",
-      "msg": "Failed to calculate user group"
-    },
-    {
-      "code": 6007,
-      "name": "MaxTokensReached",
-      "msg": "Max tokens reached"
-    },
-    {
-      "code": 6008,
-      "name": "MaxParticipantsReached",
-      "msg": "Max participants reached"
+      "name": "CannotRevokeOwnRole",
+      "msg": "Cannot revoke your own role"
     }
   ],
   "types": [
@@ -2537,10 +2502,6 @@
           {
             "name": "campaign",
             "type": "pubkey"
-          },
-          {
-            "name": "distribution_at",
-            "type": "u64"
           }
         ]
       }

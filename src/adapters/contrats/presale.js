@@ -224,17 +224,13 @@ export class PresaleContractAdapter {
 
   async setCampaignStatus(tokenName, tokenSymbol, status, timestamp) {
     const pdas = PresaleContractAdapter.getPdas(tokenName, tokenSymbol, this.#program.programId);
-    let statusObj;
-    if (status === 'distributionOpened' && timestamp) {
-      statusObj = { distributionOpened: new BN(Math.floor(timestamp)) };
-    } else {
-      statusObj = { [status]: {} };
-    }
+
     await this.#program.methods
       .setStatus({
         tokenName,
         tokenSymbol,
-        status: statusObj,
+        status: { [status]: {} },
+        distributeAt: timestamp ? new BN(timestamp) : null,
       })
       .accounts({
         campaign: pdas.campaignPda,

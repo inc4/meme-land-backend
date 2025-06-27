@@ -238,17 +238,22 @@ export class PresaleContractAdapter {
   }
 
   readParticipationLogs(callback) {
-    const necessaryEventDiscriminator = idl.events.find((e) => e.name === 'ParticipateEvent').discriminator;
-    const marker = Buffer.from(necessaryEventDiscriminator).toString("base64").replace(/=+$/, "");
+    const discriminator = idl.events.find((e) => e.name === 'ParticipateEvent').discriminator;
+    const discriminatorBuffer = Buffer.from(discriminator);
 
     this.#program.provider.connection.onLogs(
       this.#program.programId,
       (logs, ctx) => {
-        const matched = logs.logs.find(line => line.includes(marker));
-        if (!matched) return;
+        const programDataLine = logs.logs.find(line => line.startsWith("Program data: "));
+        if (!programDataLine) return;
 
-        const base64Data = matched.replace("Program data: ", "").replace(/=+$/, "");
-        const eventBuffer = Buffer.from(base64Data, 'base64');
+        const base64Payload = programDataLine.replace("Program data: ", "")
+        const eventBuffer = Buffer.from(base64Payload, 'base64');
+
+        const prefix = eventBuffer.subarray(0, 8);
+        if (!prefix.equals(discriminatorBuffer)) return;
+
+        const eventDataBuffer = eventBuffer.subarray(8);
 
         const ParticipateEventLayout = borsh.struct([
           borsh.str('token_name'),
@@ -260,7 +265,6 @@ export class PresaleContractAdapter {
           borsh.publicKey('participant_pubkey')
         ]);
 
-        const eventDataBuffer = eventBuffer.subarray(8);
         const event = ParticipateEventLayout.decode(eventDataBuffer);
 
         return callback({
@@ -271,11 +275,12 @@ export class PresaleContractAdapter {
           mintAccount: event.mint_account.toBase58(),
           participationAccount: event.participant_pubkey.toBase58(),
           campaign: event.campaign.toBase58()
-        })
+        });
       },
       "confirmed"
     );
   }
+
 
   async calculateDistribution(tokenName, tokenSymbol) {
     const pdas = PresaleContractAdapter.getPdas(tokenName, tokenSymbol, this.#program.programId, this.#payer.publicKey);

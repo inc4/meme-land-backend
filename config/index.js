@@ -9,7 +9,10 @@ const config = {};
 
 // presale default settings
 config.presaleDefaults = {
-  changeStatusInterval: Number(env.CHANGE_STATUS_INTERVAL),
+  presaleDuration: Number(env.PRESALE_DURATION),
+  distributionDelay: Number(env.DISTRIBUTION_DELAY),
+  drawStartDelay: Number(env.DRAW_START_DELAY),
+  claimTokenMinInterval: Number(env.CLAIM_TOKEN_MIN_INTERVAL),
   tokenUnlockInterval: Number(env.TOKEN_UNLOCK_INTERVAL),
   tokenSupply: Number(env.TOKEN_SUPPLY),
 };

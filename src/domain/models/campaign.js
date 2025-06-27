@@ -64,6 +64,7 @@ const CampaignSchema = new mongoose.Schema(
     /* === PRESALE DATES */
     presaleStartUTC: { type: Date, required: true, immutable: true },
     presaleEndUTC: { type: Date, required: true, immutable: true },
+    distributionUTC: { type: Date, required: true, immutable: true },
     presaleDrawStartUTC: { type: Date, required: true, immutable: true },
     presaleDrawEndUTC: { type: Date, required: true, immutable: true },
     tokenUnlockInterval: { type: Number, required: true, immutable: true },
@@ -79,7 +80,7 @@ const CampaignSchema = new mongoose.Schema(
     buybackReserve: { type: mongoose.Types.Decimal128, required: true },
     team: { type: mongoose.Types.Decimal128, required: true },
     liquidityAtListing: { type: mongoose.Types.Decimal128, required: true },
-    tokensSentToLP: { type: mongoose.Types.Decimal128, required: true },
+    tokensSentToLP: { type: mongoose.Types.Decimal128, required: true, immutable: true  },
     priceLevelSupport: { type: mongoose.Types.Decimal128, required: true },
 
     /* === PIE CHART */

@@ -211,6 +211,10 @@
  *               type: string
  *               format: date-time
  *               example: "2025-07-02T12:00:00Z"
+ *             distributionUTC:
+ *               type: string
+ *               format: date-time
+ *               example: "2025-07-02T12:00:00Z"
  *             presaleDrawStartUTC:
  *               type: string
  *               format: date-time
@@ -291,6 +295,9 @@ export class CampaignController {
         return res.status(401).send(this.#composeError(401, 'Unauthorized'));
       }
       const campaignData = await this.#campaignService.addCampaign(req.body);
+      if (!campaignData) {
+        res.status(400).send(this.#composeError(400, 'Invalid presale start time'));
+      }
       return res.status(201).send(campaignData);
     } catch (err) {
       res.status(500).send(this.#composeError(500, err.message));

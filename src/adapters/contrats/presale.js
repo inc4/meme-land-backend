@@ -226,7 +226,7 @@ export class PresaleContractAdapter {
     const pdas = PresaleContractAdapter.getPdas(tokenName, tokenSymbol, this.#program.programId);
     let statusObj;
     if (status === 'distributionOpened' && timestamp) {
-      statusObj = { distributionOpened: new anchor.BN(timestamp) };
+      statusObj = { distributionOpened: new BN(Math.floor(timestamp)) };
     } else {
       statusObj = { [status]: {} };
     }

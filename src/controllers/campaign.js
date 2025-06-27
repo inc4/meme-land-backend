@@ -296,7 +296,7 @@ export class CampaignController {
       }
       const campaignData = await this.#campaignService.addCampaign(req.body);
       if (!campaignData) {
-        res.status(400).send(this.#composeError(400, 'Invalid presale start time'));
+        return res.status(400).send(this.#composeError(400, 'Invalid presale start time'));
       }
       return res.status(201).send(campaignData);
     } catch (err) {

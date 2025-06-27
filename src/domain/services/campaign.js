@@ -112,6 +112,9 @@ export class CampaignService {
 
   #addDefaults(data) {
     data.campaignId = uuidv4();
+    data.tokenSupply = this.#settings.tokenSupply;
+    data.tokenUnlockInterval = this.#settings.tokenUnlockInterval;
+
     data.presaleEndUTC = new Date(CampaignService.ts(data.presaleStartUTC) + this.#settings.presaleDuration);
     data.distributionUTC = new Date(CampaignService.ts(data.presaleEndUTC) + this.#settings.distributionDelay);
     data.presaleDrawStartUTC = new Date(CampaignService.ts(data.presaleEndUTC) + this.#settings.drawStartDelay);
@@ -119,8 +122,6 @@ export class CampaignService {
       + (data.amountOfWallet - 1) * data.tokenUnlockInterval
       + this.#settings.claimTokenMinInterval
     );
-    data.tokenSupply = this.#settings.tokenSupply;
-    data.tokenUnlockInterval = this.#settings.tokenUnlockInterval;
   }
 
   // get date timestamp

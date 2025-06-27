@@ -1,5 +1,5 @@
 {
-  "address": "HK8wKMM7eW9CvmnwWiZsqgGVyyMFVrCxMdfqbsyjEczY",
+  "address": "7esrVL6gfAntAdCL9Z461Z5x5CKfsSkxgEtowGfkTTYC",
   "metadata": {
     "name": "mem_land",
     "version": "0.1.0",
@@ -2566,6 +2566,12 @@
           {
             "name": "token_account",
             "type": "pubkey"
+          },
+          {
+            "name": "distribute_at",
+            "type": {
+              "option": "u64"
+            }
           }
         ]
       }
@@ -2613,10 +2619,7 @@
             "name": "PresaleFinished"
           },
           {
-            "name": "DistributionOpened",
-            "fields": [
-              "u64"
-            ]
+            "name": "DistributionOpened"
           },
           {
             "name": "DistributionFinished"
@@ -3127,6 +3130,12 @@
               "defined": {
                 "name": "CampaignStatus"
               }
+            }
+          },
+          {
+            "name": "distribute_at",
+            "type": {
+              "option": "u64"
             }
           }
         ]

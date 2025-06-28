@@ -54,8 +54,6 @@ export class ParticipationService {
       tokenAllocation: eventData.tokenAmount,
     };
 
-    await this.#dataModel.create(record);
-
     try {
       await this.#dataModel.create(record);
     } catch (err) {

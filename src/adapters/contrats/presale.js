@@ -283,6 +283,67 @@ export class PresaleContractAdapter {
     );
   }
 
+  readSetStatusLogs(callback) {
+    const discriminator = idl.events.find((e) => e.name === 'SetStatusEvent').discriminator;
+    const discriminatorBuffer = Buffer.from(discriminator);
+
+    this.#program.provider.connection.onLogs(
+      this.#program.programId,
+      (logs, ctx) => {
+        const programDataLine = logs.logs.find(line => line.startsWith("Program data: "));
+        if (!programDataLine) return;
+
+        const base64Payload = programDataLine.replace("Program data: ", "")
+        const eventBuffer = Buffer.from(base64Payload, 'base64');
+
+        const prefix = eventBuffer.subarray(0, 8);
+        if (!prefix.equals(discriminatorBuffer)) return;
+
+        const eventDataBuffer = eventBuffer.subarray(8);
+
+        // pub enum CampaignStatus {
+        //     Upcoming,
+        //     PresaleOpened,
+        //     PresaleFinished,
+        //     DistributionOpened(u64),
+        //     DistributionFinished,
+        // }
+        const CampaignStatusLayout = borsh.rustEnum([
+          borsh.struct([], "Upcoming"),
+          borsh.struct([], "PresaleOpened"),
+          borsh.struct([], "PresaleFinished"),
+          borsh.struct([], "DistributionOpened"),
+          borsh.struct([], "DistributionFinished"),
+        ]);
+
+        // #[event]
+        // pub struct SetStatusEvent {
+        //     pub token_name: String,
+        //     pub token_symbol: String,
+        //     pub status: CampaignStatus,
+        //     pub mint_account: Pubkey,
+        //     pub campaign: Pubkey,
+        // }
+
+        const SetStatusEventLayout = borsh.struct([
+          borsh.str('token_name'),
+          borsh.str('token_symbol'),
+          CampaignStatusLayout.replicate("status"),
+          borsh.publicKey('mint_account'),
+          borsh.publicKey('campaign'),
+        ]);
+
+        const event = SetStatusEventLayout.decode(eventDataBuffer);
+
+        return callback({
+          tokenName: event.token_name,
+          tokenSymbol: event.token_symbol,
+          status: Object.keys(event.status)[0],
+        });
+      },
+      "confirmed"
+    );
+  }
 
   async calculateDistribution(tokenName, tokenSymbol) {
     const pdas = PresaleContractAdapter.getPdas(tokenName, tokenSymbol, this.#program.programId, this.#payer.publicKey);

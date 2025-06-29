@@ -23,6 +23,7 @@ export class CampaignService {
     };
     this.#isExistedCampaignsProcessed = false; // indicate that timers for existed campaign was restored
     this.#setExistedCampaignsTimers(); // set timers after server was down
+    this.#presaleContract.readSetStatusLogs(this.#handleSetStatusEvent.bind(this))
   }
 
   async addCampaign(data) {
@@ -121,6 +122,18 @@ export class CampaignService {
 
   static #isValid(data, currentTs) {
     return CampaignService.ts(data.presaleStartUTC) > currentTs;
+  }
+
+  // eventData: {
+  //   tokenName: event.token_name,
+  //   tokenSymbol: event.token_symbol,
+  //   status: event.status,
+  // }
+  async #handleSetStatusEvent(eventData) {
+    await this.#dataModel.updateOne(
+      { tokenName: eventData.tokenName, eventData: eventData.tokenSymbol },
+      { currentStatus: eventData.status }
+    );
   }
 
   #addDefaults(data) {

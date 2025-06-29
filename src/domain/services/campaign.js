@@ -7,16 +7,31 @@ export class CampaignService {
   #presaleContract;
   #composeDataPage;
   #settings;
+  #statusDate;
+  #isExistedCampaignsProcessed;
 
   constructor(dataModel, presaleContract, pageDataComposer, settings) {
     this.#dataModel = dataModel;
     this.#presaleContract = presaleContract;
     this.#composeDataPage = pageDataComposer;
     this.#settings = settings;
+    this.#statusDate = {
+      presaleOpened: 'presaleStartUTC',
+      presaleFinished: 'presaleEndUTC',
+      distributionOpened: 'presaleDrawStartUTC',
+      distributionFinished: 'presaleDrawEndUTC',
+    };
+    this.#isExistedCampaignsProcessed = false; // indicate that timers for existed campaign was restored
+    this.#setExistedCampaignsTimers(); // set timers after server was down
   }
 
   async addCampaign(data) {
-    if (!CampaignService.#isValid(data)) {
+    // Wait while timers set after server was down
+    await this.#waitUntilExistedCampaignProcessed();
+
+    const currentTs = Date.now();
+
+    if (!CampaignService.#isValid(data, currentTs)) {
       return null;
     }
 
@@ -36,78 +51,76 @@ export class CampaignService {
 
     const campaignData = await this.#dataModel.create(data);
 
-    this.#scheduleCampaignEvents(campaignData);
+    this.#scheduleCampaignEvents(campaignData, currentTs);
 
     return campaignData;
   }
 
-  #scheduleCampaignEvents(campaignData) {
-    const { campaignId } = campaignData;
+  async #waitUntilExistedCampaignProcessed(intervalMs = 100) {
+    while (!this.#isExistedCampaignsProcessed) {
+      await new Promise(res => setTimeout(res, intervalMs));
+    }
+  }
 
-    // presaleStartUTC
-    setTimeout(async () => {
-      await this.#presaleContract.setCampaignStatus(
-        campaignData.tokenName,
-        campaignData.tokenSymbol,
-        'presaleOpened'
-      );
-      await this.#dataModel.updateOne({ campaignId }, { currentStatus: 'presaleOpened' })
-      console.log(`TIMER EXECUTED: ${campaignData.tokenName} | ${campaignData.tokenSymbol}: 'presaleOpened'`);
-    }, new Date(campaignData.presaleStartUTC).getTime() - Date.now());
-    console.log(`TIMER SET: ${campaignData.tokenName} | ${campaignData.tokenSymbol}: 'presaleOpened'`);
+  async #setExistedCampaignsTimers() {
+    const currentTs = Date.now();
 
-    // presaleEndUTC
-    setTimeout(async () => {
-      await this.#presaleContract.setCampaignStatus(
-        campaignData.tokenName,
-        campaignData.tokenSymbol,
-        'presaleFinished'
-      );
-      await this.#dataModel.updateOne({ campaignId }, { currentStatus: 'presaleFinished' })
-      console.log(`TIMER EXECUTED: ${campaignData.tokenName} | ${campaignData.tokenSymbol}: 'presaleFinished'`);
-    }, new Date(campaignData.presaleEndUTC).getTime() - Date.now());
-    console.log(`TIMER SET: ${campaignData.tokenName} | ${campaignData.tokenSymbol}: 'presaleFinished'`);
+    const conditions = { currentStatus: { $ne: 'distributionFinished' } };
+    const pageQuery = {
+      page: 1, // paginate use 1 as first page
+      limit: 100,
+      sort: { createdAt: -1 },// -1(DESC) | 1(ASC)
+    }
 
-    // distributionUTC
+    let hasNextPage = true;
+    while (hasNextPage) {
+      const campaignPage = await this.#dataModel.paginate(conditions, pageQuery);
+      campaignPage.docs.forEach((campaign) => {
+        this.#scheduleCampaignEvents(campaign, currentTs);
+      });
+
+      hasNextPage = campaignPage.hasNextPage;
+      pageQuery.page++;
+    }
+    this.#isExistedCampaignsProcessed = true;
+  }
+
+  #scheduleCampaignEvents(campaignData, currentTs) {
+    Object.keys(this.#statusDate).forEach((status) => {
+      this.#scheduleSetStatus(campaignData, status, currentTs);
+    });
+    this.#scheduleDistribution(campaignData, currentTs);
+  }
+
+  #scheduleDistribution(campaignData, currentTs) {
+    if (currentTs > campaignData.distributionUTC) {
+      return;
+    }
     setTimeout(async () => {
       await this.#presaleContract.calculateDistribution(
         campaignData.tokenName,
         campaignData.tokenSymbol
       );
-      console.log(`TIMER EXECUTED: ${campaignData.tokenName} | ${campaignData.tokenSymbol}: 'calculateDistribution'`);
-    }, new Date(campaignData.distributionUTC).getTime() - Date.now());
-    console.log(`TIMER SET: ${campaignData.tokenName} | ${campaignData.tokenSymbol}: 'calculateDistribution'`);
-
-
-    // presaleDrawStartUTC
-    setTimeout(async () => {
-      await this.#presaleContract.setCampaignStatus(
-        campaignData.tokenName,
-        campaignData.tokenSymbol,
-        'distributionOpened',
-        CampaignService.ts(campaignData.presaleDrawStartUTC)
-      );
-      await this.#dataModel.updateOne({ campaignId }, { currentStatus: 'distributionOpened' })
-      console.log(`TIMER EXECUTED: ${campaignData.tokenName} | ${campaignData.tokenSymbol}: 'distributionOpened'`);
-    }, new Date(campaignData.presaleDrawStartUTC).getTime() - Date.now());
-    console.log(`TIMER SET: ${campaignData.tokenName} | ${campaignData.tokenSymbol}: 'distributionOpened'`);
-
-
-    // presaleDrawEndUTC
-    setTimeout(async () => {
-      await this.#presaleContract.setCampaignStatus(
-        campaignData.tokenName,
-        campaignData.tokenSymbol,
-        'distributionFinished'
-      );
-      await this.#dataModel.updateOne({ campaignId }, { currentStatus: 'distributionFinished' })
-      console.log(`TIMER EXECUTED: ${campaignData.tokenName} | ${campaignData.tokenSymbol}: 'distributionFinished'`);
-    }, new Date(campaignData.presaleDrawEndUTC).getTime() - Date.now());
-    console.log(`TIMER SET: ${campaignData.tokenName} | ${campaignData.tokenSymbol}: 'distributionFinished'`);
+    }, CampaignService.ts(campaignData.distributionUTC) - currentTs);
   }
 
-  static #isValid(data) {
-    return CampaignService.ts(data.presaleStartUTC) > Date.now();
+  #scheduleSetStatus(campaignData, status, currentTs) {
+    if (currentTs > CampaignService.ts(campaignData[this.#statusDate[status]])) {
+      return;
+    }
+    setTimeout(async () => {
+      await this.#presaleContract.setCampaignStatus(
+        campaignData.tokenName,
+        campaignData.tokenSymbol,
+        status,
+        status === 'distributionOpened' ? CampaignService.ts(campaignData.presaleDrawStartUTC) : undefined,
+      );
+      await this.#dataModel.updateOne({ campaignId: campaignData.campaignId }, { currentStatus: status })
+    }, CampaignService.ts(campaignData[this.#statusDate[status]]) - currentTs);
+  }
+
+  static #isValid(data, currentTs) {
+    return CampaignService.ts(data.presaleStartUTC) > currentTs;
   }
 
   #addDefaults(data) {

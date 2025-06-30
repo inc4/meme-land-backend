@@ -4,47 +4,49 @@ export class ParticipationService {
   #dataModel;
   #campaignService;
   #presaleContract;
+  #eventBus;
   #composeDataPage;
   #campaignCache;
 
-  constructor(dataModel, campaignService, presaleContract, pageDataComposer) {
+  constructor(dataModel, campaignService, presaleContract, eventBus, pageDataComposer) {
     this.#dataModel = dataModel;
     this.#campaignService = campaignService;
     this.#presaleContract = presaleContract;
+    this.#eventBus = eventBus;
     this.#composeDataPage = pageDataComposer;
     this.#campaignCache = new Map();
-    this.#presaleContract.readParticipationLogs(this.#handleParticipationEvent.bind(this))
+    this.#presaleContract.readParticipationLogs(this.#handleParticipationEvent.bind(this));
+    this.#eventBus.on('CalculateDistributionEvent', this.#handleCalculateDistributionEvent.bind(this));
   }
 
   async get(conditions, page = 0, limit = 10) {
     const result = await this.#dataModel.paginate(conditions, {
       page: page + 1, // paginate use 1 as first page
       limit,
-      sort: { createdAt: -1 },// -1(DESC) | 1(ASC)
+      sort: { distributionPosition: 1, createdAt: 1 },// -1(DESC) | 1(ASC)
     });
     return this.#composeDataPage(result);
+  }
+
+  async getCampaignId(tokenName, tokenSymbol) {
+    const cacheKey = `${tokenName}_${tokenSymbol}`;
+    let campaignId = this.#campaignCache.get(cacheKey);
+
+    if (!campaignId) {
+      const campaigns = await this.#campaignService.get({ tokenSymbol, tokenName }, 0, 1);
+      campaignId = campaigns.page.data[0]?.campaignId;
+      if (!campaignId) {
+        throw new Error(`Campaign "${cacheKey}" not found`);
+      }
+      this.#campaignCache.set(cacheKey, campaignId);
+    }
+    return campaignId;
   }
 
   async #handleParticipationEvent(eventData) {
     console.log('Participation event: ', eventData);
 
-    const cacheKey = `${eventData.tokenName}_${eventData.tokenSymbol}`;
-    let campaignId = this.#campaignCache.get(cacheKey);
-
-    if (!campaignId) {
-      const campaigns = await this.#campaignService.get(
-        { tokenSymbol: eventData.tokenSymbol, tokenName: eventData.tokenName },
-        0,
-        1
-      );
-      campaignId = campaigns.page.data[0]?.campaignId;
-
-      if (!campaignId) {
-        throw new Error(`Campaign "${cacheKey}" not found`);
-      }
-
-      this.#campaignCache.set(cacheKey, campaignId);
-    }
+    const campaignId = await this.getCampaignId(eventData.tokenName, eventData.tokenSymbol);
 
     const record = {
       participationId: uuidv4(),
@@ -60,6 +62,43 @@ export class ParticipationService {
       if (err.code !== 11000) {
         throw err;
       }
+    }
+  }
+
+  // eventData: {
+  //   tokenName: String,
+  //   tokenSymbol: String,
+  // }
+  async #handleCalculateDistributionEvent(eventData) {
+    console.log('CalculateDistribution event: ', eventData);
+    const { tokenName, tokenSymbol } = eventData;
+    const { randomness, totalParticipants } = await this.#presaleContract.getCampaignVRFDescriptor(tokenName, tokenSymbol);
+
+    const campaignId = await this.getCampaignId(tokenName, tokenSymbol);
+    const pageQuery = {
+      page: 1, // paginate use 1 as first page
+      limit: 100,
+      sort: { createdAt: -1 },// -1(DESC) | 1(ASC)
+    }
+
+    let hasNextPage = true;
+    while (hasNextPage) {
+      const participationPage = await this.#dataModel.paginate({ campaignId }, pageQuery);
+      setImmediate(async () => {
+        const updatePage = participationPage.docs.map((participation) => {
+          const distributionPosition = this.#presaleContract.calculateUserGroup(randomness, participation.wallet, totalParticipants);
+          return {
+            updateOne: {
+              filter: { wallet: participation.wallet, campaignId },
+              update: { $set: { distributionPosition } }
+            }
+          }
+        });
+        await this.#dataModel.bulkWrite(updatePage);
+      });
+
+      hasNextPage = participationPage.hasNextPage;
+      pageQuery.page++;
     }
   }
 }

@@ -5,14 +5,16 @@ import { v4 as uuidv4 } from 'uuid';
 export class CampaignService {
   #dataModel;
   #presaleContract;
+  #eventBus;
   #composeDataPage;
   #settings;
   #statusDate;
   #isExistedCampaignsProcessed;
 
-  constructor(dataModel, presaleContract, pageDataComposer, settings) {
+  constructor(dataModel, presaleContract, eventBus, pageDataComposer, settings) {
     this.#dataModel = dataModel;
     this.#presaleContract = presaleContract;
+    this.#eventBus = eventBus;
     this.#composeDataPage = pageDataComposer;
     this.#settings = settings;
     this.#statusDate = {
@@ -102,6 +104,7 @@ export class CampaignService {
         campaignData.tokenName,
         campaignData.tokenSymbol
       );
+      this.#eventBus.emit('CalculateDistributionEvent', { tokenName: campaignData.tokenName, tokenSymbol: campaignData.tokenSymbol });
     }, CampaignService.ts(campaignData.distributionUTC) - currentTs);
   }
 
@@ -130,6 +133,8 @@ export class CampaignService {
   //   status: event.status,
   // }
   async #handleSetStatusEvent(eventData) {
+    console.log('SetStatus event: ', eventData);
+
     await this.#dataModel.updateOne(
       { tokenName: eventData.tokenName, eventData: eventData.tokenSymbol },
       { currentStatus: eventData.status }

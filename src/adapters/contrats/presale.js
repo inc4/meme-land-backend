@@ -2,7 +2,7 @@ import * as anchor from "@coral-xyz/anchor";
 import * as borsh from '@coral-xyz/borsh'
 import Decimal from 'decimal.js';
 import { BN } from "bn.js";
-
+import { sha256 } from "js-sha256";
 import { PublicKey } from "@solana/web3.js";
 import { TOKEN_PROGRAM_ID, ASSOCIATED_TOKEN_PROGRAM_ID, getAssociatedTokenAddress } from "@solana/spl-token";
 import { networkStateAccountAddress, Orao, randomnessAccountAddress } from "@orao-network/solana-vrf";
@@ -345,6 +345,107 @@ export class PresaleContractAdapter {
     );
   }
 
+  readDistributionLogs(callback) {
+    const discriminator = idl.events.find((e) => e.name === 'CalculateDistributionEvent').discriminator;
+    const discriminatorBuffer = Buffer.from(discriminator);
+
+    this.#program.provider.connection.onLogs(
+      this.#program.programId,
+      (logs, ctx) => {
+        const programDataLine = logs.logs.find(line => line.startsWith("Program data: "));
+        if (!programDataLine) return;
+
+        const base64Payload = programDataLine.replace("Program data: ", "")
+        const eventBuffer = Buffer.from(base64Payload, 'base64');
+
+
+        const prefix = eventBuffer.subarray(0, 8);
+
+        if (!prefix.equals(discriminatorBuffer)) return;
+
+        const eventDataBuffer = eventBuffer.subarray(8);
+
+        // #[event]
+        // pub struct CalculateDistributionEvent {
+        //     pub token_name: String,
+        //     pub token_symbol: String,
+        //     pub mint_account: Pubkey,
+        //     pub campaign: Pubkey,
+        // }
+        const CalculateDistributionEventLayout = borsh.struct([
+          borsh.str('token_name'),
+          borsh.str('token_symbol'),
+          borsh.publicKey('mint_account'),
+          borsh.publicKey('campaign'),
+        ]);
+
+        const event = CalculateDistributionEventLayout.decode(eventDataBuffer);
+
+        return callback({
+          tokenName: event.token_name,
+          tokenSymbol: event.token_symbol,
+          mintAccount: event.mint_account.toBase58(),
+          campaign: event.campaign.toBase58()
+        });
+      },
+      "confirmed"
+    );
+  }
+
+  // name: string, symbol: string
+  // returns Promise<{randomness,totalParticipants}>
+  async getCampaignVRFDescriptor(name, symbol) {
+    console.log(`Get campaign VRF descriptor for ${name} (${symbol})`);
+
+    const pdas = PresaleContractAdapter.getPdas(name, symbol, this.#program.programId, this.#payer.publicKey);
+
+    const campaignStatsData = await this.#program.account.campaignStats.fetch(
+      pdas.campaignStatsPda
+    );
+
+    const totalParticipants = campaignStatsData.totalParticipants.toNumber();
+
+    const seed = pdas.campaignPda.toBuffer();
+
+    // Get fulfilled randomness using VRF waitFulfilled method
+    let randomness = null;
+    do {
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+      try {
+        randomness = await this.#vrf.waitFulfilled(seed);
+      } catch { };
+    } while (!randomness)
+
+    console.log(
+      `Using VRF randomness: ${Buffer.from(randomness.randomness)
+        .toString("hex")
+        .substring(0, 16)}...`
+    );
+    return {
+      randomness: randomness.randomness,
+      totalParticipants,
+    };
+
+  }
+
+  // (vrfRandomness: Uint8Array, walletAddress: string,totalParticipants: number)
+  // returns number
+  calculateUserGroup(vrfRandomness, walletAddress, totalParticipants) {
+    const combinedData = new Uint8Array(
+      Buffer.concat([Buffer.from(vrfRandomness), Buffer.from(new PublicKey(walletAddress).toBytes())])
+    );
+
+    const hashResult = sha256.array(combinedData);
+
+    const first8Bytes = hashResult.slice(0, 8);
+    const hashAsU64 = Buffer.from(first8Bytes).readBigUInt64BE(0);
+
+    const usersPerGroup = 1;
+    const groupCount = Math.max(Math.floor(totalParticipants / usersPerGroup), 1);
+
+    return Number(hashAsU64 % BigInt(groupCount));
+  }
+
   async calculateDistribution(tokenName, tokenSymbol) {
     const pdas = PresaleContractAdapter.getPdas(tokenName, tokenSymbol, this.#program.programId, this.#payer.publicKey);
     const random = randomnessAccountAddress(pdas.campaignPda.toBuffer());
@@ -371,7 +472,6 @@ export class PresaleContractAdapter {
       .signers([this.#payer])
       .rpc();
   }
-
 
   static getPdas(tokenName, tokenSymbol, programId, userPubkey) {
     const [mintPda] = PublicKey.findProgramAddressSync(

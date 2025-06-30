@@ -3,6 +3,7 @@ import winston from 'winston';
 import { v4 as uuidv4 } from 'uuid';
 import cors from 'cors';
 import mongoose from 'mongoose';
+import EventEmitter from 'events';
 
 import { WinstonLoggerAdapter, PresaleContractAdapter } from '../../adapters/index.js';
 import {
@@ -29,13 +30,19 @@ const logger = new WinstonLoggerAdapter(winston, config.logger);
 
 mongoose.connect(config.mongo.url, config.mongo.options);
 
+// set flag for use unhandled rejection handler
+const eventEmitter = new EventEmitter({captureRejections: true});
+// set handler for unhandled rejection(used with async callbacks)
+eventEmitter[Symbol.for('nodejs.rejection')] = logger.error.bind(logger);
+
 const presaleContractAdapter = new PresaleContractAdapter();
 const walletService = new WalletService(walletModel, presaleContractAdapter, DataPageComposer.composePageInfo);
 const walletController = new WalletController(walletService, HttpErrorBody.compose, RequestInputsParser.parseRequestQueryParam);
-const campaignService = new CampaignService(campaignModel, presaleContractAdapter, DataPageComposer.composePageInfo, config.presaleDefaults);
+const campaignService = new CampaignService(campaignModel, presaleContractAdapter, eventEmitter, DataPageComposer.composePageInfo, config.presaleDefaults);
 const campaignController = new CampaignController(campaignService, HttpErrorBody.compose, RequestInputsParser.parseRequestQueryParam)
 
-const participationService = new ParticipationService(participationModel, campaignService, presaleContractAdapter, DataPageComposer.composePageInfo);
+const participationService = new ParticipationService(participationModel, campaignService, presaleContractAdapter, eventEmitter, DataPageComposer.composePageInfo);
+
 const participationController = new ParticipationController(participationService, HttpErrorBody.compose, RequestInputsParser.parseRequestQueryParam);
 
 const swaggerController = new SwaggerController();

@@ -176,11 +176,15 @@ export class PresaleContractAdapter {
   // }
   async createCampaign(campaignData) {
     const pdas = PresaleContractAdapter.getPdas(campaignData.tokenName, campaignData.tokenSymbol, this.#program.programId, this.#payer.publicKey);
+        
+    // Solana on-chain use sec as timestamp
+    const step = new BN(Math.floor(campaignData.step / 1000));
+
     const tx = await this.#program.methods
       .createCampaign({
         tokenName: campaignData.tokenName,
         tokenSymbol: campaignData.tokenSymbol,
-        step: new BN(campaignData.step),
+        step,
         price: PresaleContractAdapter.parseAmountToBN(campaignData.price, SOL_DECIMALS),// convert to lamports
         minAmount: PresaleContractAdapter.parseAmountToBN(campaignData.minAmount, SOL_DECIMALS),// convert to lamports
         maxAmount: PresaleContractAdapter.parseAmountToBN(campaignData.maxAmount, SOL_DECIMALS),// convert to lamports
@@ -225,12 +229,15 @@ export class PresaleContractAdapter {
   async setCampaignStatus(tokenName, tokenSymbol, status, timestamp) {
     const pdas = PresaleContractAdapter.getPdas(tokenName, tokenSymbol, this.#program.programId);
 
+    // Solana on-chain use sec as timestamp
+    const distributeAt = timestamp ? new BN(Math.floor(timestamp / 1000)) : null
+
     await this.#program.methods
       .setStatus({
         tokenName,
         tokenSymbol,
         status: { [status]: {} },
-        distributeAt: timestamp ? new BN(timestamp) : null,
+        distributeAt,
       })
       .accounts({
         campaign: pdas.campaignPda,

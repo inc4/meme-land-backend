@@ -402,8 +402,6 @@ export class PresaleContractAdapter {
   // name: string, symbol: string
   // returns Promise<{randomness,totalParticipants}>
   async getCampaignVRFDescriptor(name, symbol) {
-    console.log(`Get campaign VRF descriptor for ${name} (${symbol})`);
-
     const pdas = PresaleContractAdapter.getPdas(name, symbol, this.#program.programId, this.#payer.publicKey);
 
     const campaignStatsData = await this.#program.account.campaignStats.fetch(
@@ -423,11 +421,6 @@ export class PresaleContractAdapter {
       } catch { };
     } while (!randomness)
 
-    console.log(
-      `Using VRF randomness: ${Buffer.from(randomness.randomness)
-        .toString("hex")
-        .substring(0, 16)}...`
-    );
     return {
       randomness: randomness.randomness,
       totalParticipants,

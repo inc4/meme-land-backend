@@ -69,7 +69,8 @@ const participationService = new ParticipationService(
   campaignService,
   presaleContractAdapter,
   eventEmitter,
-  DataPageComposer.composePageInfo
+  DataPageComposer.composePageInfo,
+  logger
 );
 
 const participationController = new ParticipationController(

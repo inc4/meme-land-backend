@@ -54,7 +54,8 @@ const campaignService = new CampaignService(
   presaleContractAdapter,
   eventEmitter,
   DataPageComposer.composePageInfo,
-  config.presaleDefaults
+  config.presaleDefaults,
+  logger
 );
 
 const campaignController = new CampaignController(

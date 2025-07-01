@@ -8,15 +8,18 @@ export class CampaignService {
   #eventBus;
   #composeDataPage;
   #settings;
+  #logger;
   #statusDate;
   #isExistedCampaignsProcessed;
 
-  constructor(dataModel, presaleContract, eventBus, pageDataComposer, settings) {
+  constructor(dataModel, presaleContract, eventBus, pageDataComposer, settings, logger) {
     this.#dataModel = dataModel;
     this.#presaleContract = presaleContract;
     this.#eventBus = eventBus;
     this.#composeDataPage = pageDataComposer;
     this.#settings = settings;
+    this.#logger = logger;
+
     this.#statusDate = {
       presaleOpened: 'presaleStartUTC',
       presaleFinished: 'presaleEndUTC',
@@ -35,28 +38,34 @@ export class CampaignService {
     const currentTs = Date.now();
 
     if (!CampaignService.#isValid(data, currentTs)) {
+      this.#logger.debug('Invalid campaign input ts: ', data);
       return null;
     }
 
     this.#addDefaults(data);
 
-    const { mintPda } = await this.#presaleContract.createToken(
-      CampaignService.composeTokenData(data)
-    );
+    const tokenData = CampaignService.composeTokenData(data);
+    const { mintPda } = await this.#presaleContract.createToken(tokenData);
     data.tokenMintPda = mintPda;
+    this.#logger.info('Token created on-chain: ', tokenData);
 
+
+    const campaignData = CampaignService.composeCampaignData(data);
     const { campaignPda, campaignStatsPda, tokenAccount } = await this.#presaleContract.createCampaign(
-      CampaignService.composeCampaignData(data)
+      campaignData
     );
     data.campaignPda = campaignPda;
     data.campaignStatsPda = campaignStatsPda;
     data.tokenDistributionAccount = tokenAccount;
+    this.#logger.info('Campaign created on-chain: ', campaignData);
 
-    const campaignData = await this.#dataModel.create(data);
+    const campaign = await this.#dataModel.create(data);
 
-    this.#scheduleCampaignEvents(campaignData, currentTs);
+    this.#logger.info('Campaign created: ', { campaignId: campaign.campaignId });
 
-    return campaignData;
+    this.#scheduleCampaignEvents(campaign, currentTs);
+
+    return campaign;
   }
 
   async #waitUntilExistedCampaignProcessed(intervalMs = 100) {
@@ -104,8 +113,23 @@ export class CampaignService {
         campaignData.tokenName,
         campaignData.tokenSymbol
       );
+      this.#logger.info('CalculateDistribution timer executed: ',
+        {
+          tokenName: campaignData.tokenName,
+          tokenSymbol: campaignData.tokenSymbol,
+          date: campaignData.distributionUTC,
+        }
+      );
+
       this.#eventBus.emit('CalculateDistributionEvent', { tokenName: campaignData.tokenName, tokenSymbol: campaignData.tokenSymbol });
     }, CampaignService.ts(campaignData.distributionUTC) - currentTs);
+    this.#logger.info('CalculateDistribution timer set: ',
+      {
+        tokenName: campaignData.tokenName,
+        tokenSymbol: campaignData.tokenSymbol,
+        date: campaignData.distributionUTC,
+      }
+    );
   }
 
   #scheduleSetStatus(campaignData, status, currentTs) {
@@ -119,8 +143,24 @@ export class CampaignService {
         status,
         status === 'distributionOpened' ? CampaignService.ts(campaignData.presaleDrawStartUTC) : undefined,
       );
-      await this.#dataModel.updateOne({ campaignId: campaignData.campaignId }, { currentStatus: status })
+      await this.#dataModel.updateOne({ campaignId: campaignData.campaignId }, { currentStatus: status });
+      this.#logger.info('Set status timer exec: ',
+        {
+          tokenName: campaignData.tokenName,
+          tokenSymbol: campaignData.tokenSymbol,
+          status: status,
+          date: campaignData[this.#statusDate[status]],
+        }
+      );
     }, CampaignService.ts(campaignData[this.#statusDate[status]]) - currentTs);
+    this.#logger.info('Set status timer set: ',
+      {
+        tokenName: campaignData.tokenName,
+        tokenSymbol: campaignData.tokenSymbol,
+        status: status,
+        date: campaignData[this.#statusDate[status]],
+      }
+    );
   }
 
   static #isValid(data, currentTs) {
@@ -133,8 +173,7 @@ export class CampaignService {
   //   status: event.status,
   // }
   async #handleSetStatusEvent(eventData) {
-    console.log('SetStatus event: ', eventData);
-
+    this.#logger.info('SetStatus event: ', eventData);
     await this.#dataModel.updateOne(
       { tokenName: eventData.tokenName, eventData: eventData.tokenSymbol },
       { currentStatus: eventData.status }
@@ -199,13 +238,14 @@ export class CampaignService {
         throw new Error(`Campaign with ID ${campaignId} not found.`);
       }
 
+      this.#logger.info('Campaign updated: ', updated);
+
       return updated;
 
     } catch (err) {
       if (err.name === 'StrictModeError' || err.message.includes('immutable')) {
         throw new Error(`Attempted to update immutable field: ${err.message}`);
       }
-
       throw err;
     }
   }

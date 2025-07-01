@@ -31,19 +31,51 @@ const logger = new WinstonLoggerAdapter(winston, config.logger);
 mongoose.connect(config.mongo.url, config.mongo.options);
 
 // set flag for use unhandled rejection handler
-const eventEmitter = new EventEmitter({captureRejections: true});
+const eventEmitter = new EventEmitter({ captureRejections: true });
 // set handler for unhandled rejection(used with async callbacks)
 eventEmitter[Symbol.for('nodejs.rejection')] = logger.error.bind(logger);
 
 const presaleContractAdapter = new PresaleContractAdapter();
-const walletService = new WalletService(walletModel, presaleContractAdapter, DataPageComposer.composePageInfo);
-const walletController = new WalletController(walletService, HttpErrorBody.compose, RequestInputsParser.parseRequestQueryParam);
-const campaignService = new CampaignService(campaignModel, presaleContractAdapter, eventEmitter, DataPageComposer.composePageInfo, config.presaleDefaults);
-const campaignController = new CampaignController(campaignService, HttpErrorBody.compose, RequestInputsParser.parseRequestQueryParam)
+const walletService = new WalletService(
+  walletModel,
+  presaleContractAdapter,
+  DataPageComposer.composePageInfo,
+  logger
+);
 
-const participationService = new ParticipationService(participationModel, campaignService, presaleContractAdapter, eventEmitter, DataPageComposer.composePageInfo);
+const walletController = new WalletController(
+  walletService,
+  HttpErrorBody.compose,
+  RequestInputsParser.parseRequestQueryParam
+);
 
-const participationController = new ParticipationController(participationService, HttpErrorBody.compose, RequestInputsParser.parseRequestQueryParam);
+const campaignService = new CampaignService(
+  campaignModel,
+  presaleContractAdapter,
+  eventEmitter,
+  DataPageComposer.composePageInfo,
+  config.presaleDefaults
+);
+
+const campaignController = new CampaignController(
+  campaignService,
+  HttpErrorBody.compose,
+  RequestInputsParser.parseRequestQueryParam
+);
+
+const participationService = new ParticipationService(
+  participationModel,
+  campaignService,
+  presaleContractAdapter,
+  eventEmitter,
+  DataPageComposer.composePageInfo
+);
+
+const participationController = new ParticipationController(
+  participationService,
+  HttpErrorBody.compose,
+  RequestInputsParser.parseRequestQueryParam
+);
 
 const swaggerController = new SwaggerController();
 

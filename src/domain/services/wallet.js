@@ -4,17 +4,21 @@ export class WalletService {
   #dataModel;
   #presaleContract;
   #composeDataPage;
+  #logger;
 
-  constructor(dataModel, presaleContract, pageDataComposer) {
+  constructor(dataModel, presaleContract, pageDataComposer, logger) {
     this.#dataModel = dataModel;
     this.#presaleContract = presaleContract;
     this.#composeDataPage = pageDataComposer;
+    this.#logger = logger;
   }
 
   async addSingle(data) {
     await this.#presaleContract.addUser(data.wallet);
     data.inviteCode = uuidv4();
-    return await this.#dataModel.create(data);
+    const userData = await this.#dataModel.create(data);
+    this.#logger.debug('User created: ', userData);
+    return userData;
   }
 
   async getSingleByInviteCode(inviteCode) {
@@ -37,6 +41,7 @@ export class WalletService {
   async updateInviteCode(wallet) {
     const inviteCode = uuidv4();
     const resp = await this.#dataModel.updateOne({ wallet }, { inviteCode });
+    this.#logger.debug('Invite code updated: ', { wallet, inviteCode });
     return (!!(resp && resp.modifiedCount)) ? { inviteCode } : null;
   }
 

@@ -6,14 +6,16 @@ export class ParticipationService {
   #presaleContract;
   #eventBus;
   #composeDataPage;
+  #logger;
   #campaignCache;
 
-  constructor(dataModel, campaignService, presaleContract, eventBus, pageDataComposer) {
+  constructor(dataModel, campaignService, presaleContract, eventBus, pageDataComposer, logger) {
     this.#dataModel = dataModel;
     this.#campaignService = campaignService;
     this.#presaleContract = presaleContract;
     this.#eventBus = eventBus;
     this.#composeDataPage = pageDataComposer;
+    this.#logger = logger;
     this.#campaignCache = new Map();
     this.#presaleContract.readParticipationLogs(this.#handleParticipationEvent.bind(this));
     this.#eventBus.on('CalculateDistributionEvent', this.#handleCalculateDistributionEvent.bind(this));
@@ -28,7 +30,7 @@ export class ParticipationService {
     return this.#composeDataPage(result);
   }
 
-  async getCampaignId(tokenName, tokenSymbol) {
+  async #getCampaignId(tokenName, tokenSymbol) {
     const cacheKey = `${tokenName}_${tokenSymbol}`;
     let campaignId = this.#campaignCache.get(cacheKey);
 
@@ -36,7 +38,8 @@ export class ParticipationService {
       const campaigns = await this.#campaignService.get({ tokenSymbol, tokenName }, 0, 1);
       campaignId = campaigns.page.data[0]?.campaignId;
       if (!campaignId) {
-        throw new Error(`Campaign "${cacheKey}" not found`);
+        // throw new Error(`Campaign "${cacheKey}" not found`);
+        this.#logger.debug('Participation campaign not found: ', { tokenName, tokenSymbol });
       }
       this.#campaignCache.set(cacheKey, campaignId);
     }
@@ -44,9 +47,9 @@ export class ParticipationService {
   }
 
   async #handleParticipationEvent(eventData) {
-    console.log('Participation event: ', eventData);
+    this.#logger.debug('Participation event: ', eventData);
 
-    const campaignId = await this.getCampaignId(eventData.tokenName, eventData.tokenSymbol);
+    const campaignId = await this.#getCampaignId(eventData.tokenName, eventData.tokenSymbol);
 
     const record = {
       participationId: uuidv4(),
@@ -70,11 +73,13 @@ export class ParticipationService {
   //   tokenSymbol: String,
   // }
   async #handleCalculateDistributionEvent(eventData) {
-    console.log('CalculateDistribution event: ', eventData);
+    this.#logger.info('CalculateDistribution event: ', eventData);
     const { tokenName, tokenSymbol } = eventData;
     const { randomness, totalParticipants } = await this.#presaleContract.getCampaignVRFDescriptor(tokenName, tokenSymbol);
 
-    const campaignId = await this.getCampaignId(tokenName, tokenSymbol);
+    this.#logger.info('VRFDescriptor retrieved: ', { tokenName, tokenSymbol });
+
+    const campaignId = await this.#getCampaignId(tokenName, tokenSymbol);
     const pageQuery = {
       page: 1, // paginate use 1 as first page
       limit: 100,
@@ -95,6 +100,13 @@ export class ParticipationService {
           }
         });
         await this.#dataModel.bulkWrite(updatePage);
+        this.#logger.debug('Distribution position calculated: ',
+          {
+            tokenName,
+            tokenSymbol,
+            numberOfParticipants: participationPage.docs.length
+          }
+        );
       });
 
       hasNextPage = participationPage.hasNextPage;

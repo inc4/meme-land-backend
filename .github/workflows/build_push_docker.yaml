@@ -12,6 +12,7 @@ env:
   AWS_REGION: eu-central-1
   ECR_REGISTRY: 043459177569.dkr.ecr.eu-central-1.amazonaws.com
   ECR_REPOSITORY: meme-land-backend
+  IP_ADDR: "3.64.250.250"
 
 jobs:
   build-and-push:
@@ -76,24 +77,24 @@ jobs:
           echo "Updating config files on server..."
           echo "${{ secrets.env }}" > secrets.env
           echo "${{ secrets.id }}" > id.json
-          ssh-keyscan -H 35.158.146.88 >> ~/.ssh/known_hosts
-          scp -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa secrets.env ec2-user@35.158.146.88:/home/ec2-user/secrets/.env
-          scp -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa id.json ec2-user@35.158.146.88:/home/ec2-user/secrets/id.json
+          ssh-keyscan -H ${{ env.IP_ADDR }} >> ~/.ssh/known_hosts
+          scp -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa secrets.env ec2-user@${{ env.IP_ADDR }}:/home/ec2-user/secrets/.env
+          scp -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa id.json ec2-user@${{ env.IP_ADDR }}:/home/ec2-user/secrets/id.json
 
       - name: Update server with new image
         run: |
           echo "Updating server with new Docker image..."
 
-          ssh-keyscan -H 35.158.146.88 >> ~/.ssh/known_hosts
-          ssh ec2-user@35.158.146.88 -i ~/.ssh/id_rsa "aws ecr get-login-password --region eu-central-1 | docker login --username AWS --password-stdin ${{ env.ECR_REGISTRY }}"
-          ssh ec2-user@35.158.146.88 -i ~/.ssh/id_rsa "docker pull ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:${{ github.ref_name }}"
+          ssh-keyscan -H ${{ env.IP_ADDR }} >> ~/.ssh/known_hosts
+          ssh ec2-user@${{ env.IP_ADDR }} -i ~/.ssh/id_rsa "aws ecr get-login-password --region eu-central-1 | docker login --username AWS --password-stdin ${{ env.ECR_REGISTRY }}"
+          ssh ec2-user@${{ env.IP_ADDR }} -i ~/.ssh/id_rsa "docker pull ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:${{ github.ref_name }}"
 
-          ssh ec2-user@35.158.146.88 -i ~/.ssh/id_rsa "docker-compose down backend && docker-compose up -d backend"
+          ssh ec2-user@${{ env.IP_ADDR }} -i ~/.ssh/id_rsa "docker-compose down backend && docker-compose up -d backend"
 
           # Health check
           for i in {1..10}; do
             sleep 10
-            status=$(ssh ec2-user@35.158.146.88 -i ~/.ssh/id_rsa "curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8877/health")
+            status=$(ssh ec2-user@${{ env.IP_ADDR }} -i ~/.ssh/id_rsa "curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8877/health")
             if [ "$status" -eq 200 ]; then
               echo "Backend is up and running!"
               exit 0

@@ -47,7 +47,7 @@ export class ParticipationService {
   }
 
   async #handleParticipationEvent(eventData) {
-    this.#logger.info('Participation event: ', eventData);
+    this.#logger.debug('Participation event: ', eventData);
 
     const campaignId = await this.#getCampaignId(eventData.tokenName, eventData.tokenSymbol);
 

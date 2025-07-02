@@ -35,7 +35,7 @@ const eventEmitter = new EventEmitter({ captureRejections: true });
 // set handler for unhandled rejection(used with async callbacks)
 eventEmitter[Symbol.for('nodejs.rejection')] = logger.error.bind(logger);
 
-const presaleContractAdapter = new PresaleContractAdapter();
+const presaleContractAdapter = new PresaleContractAdapter(logger);
 const walletService = new WalletService(
   walletModel,
   presaleContractAdapter,

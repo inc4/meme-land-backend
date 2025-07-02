@@ -4,6 +4,7 @@ import Decimal from 'decimal.js';
 import { BN } from "bn.js";
 import { sha256 } from "js-sha256";
 import { PublicKey } from "@solana/web3.js";
+import retry from 'async-retry';
 import { TOKEN_PROGRAM_ID, ASSOCIATED_TOKEN_PROGRAM_ID, getAssociatedTokenAddress } from "@solana/spl-token";
 import { networkStateAccountAddress, Orao, randomnessAccountAddress } from "@orao-network/solana-vrf";
 
@@ -15,13 +16,17 @@ const TOKEN_METADATA_PROGRAM_ID = new anchor.web3.PublicKey(
 );
 
 const SOL_DECIMALS = 9;
+const RPC_CALL_RETRY = 5;
+const RPC_CALL_MIN_INTERVAL = 1000;
 
 export class PresaleContractAdapter {
+  #logger;
   #payer;
   #program;
   #vrf;
 
-  constructor() {
+  constructor(logger) {
+    this.#logger = logger;
     const provider = anchor.AnchorProvider.env();
     anchor.setProvider(provider);
     this.#payer = provider.wallet.payer;
@@ -46,30 +51,44 @@ export class PresaleContractAdapter {
       this.#program.programId
     );
 
-    await this.#program.methods
-      .assignVerifiedUser(userKey)
-      .accounts({
-        assigner: this.#payer.publicKey,
-        assignerRoleAccount: operatorRolePda,
-        userRoleAccount: userRolePda,
-        systemProgram: anchor.web3.SystemProgram.programId,
-      })
-      .signers([this.#payer])
-      .rpc();
+    await retry(async (bail) => {
+      try {
+        return await this.#program.methods
+          .assignVerifiedUser(userKey)
+          .accounts({
+            assigner: this.#payer.publicKey,
+            assignerRoleAccount: operatorRolePda,
+            userRoleAccount: userRolePda,
+            systemProgram: anchor.web3.SystemProgram.programId,
+          })
+          .signers([this.#payer])
+          .rpc();
+      } catch (err) {
+        this.#logger.warn('Presale contract RPC assignVerifiedUser call fail. Retry...', err);
+        throw err;
+      }
+    }, {
+      retries: RPC_CALL_RETRY,
+      minTimeout: RPC_CALL_MIN_INTERVAL,
+    });
+
   }
 
   // tokeData = {name: string, symbol: string, uri: string, amount: number, receiver: PublicKey}
   async createToken(tokeData) {
     const pdas = await this.#createTokenEntity(tokeData);
 
-    let tokeAccounts = null;
-    do {
-      await new Promise((resolve) => setTimeout(resolve, 2000));
+    const tokeAccounts = await retry(async (bail) => {
       try {
-        tokeAccounts = await this.#getToken(pdas, tokeData.receiver);
-      } catch { };
-
-    } while (!tokeAccounts)
+        return await this.#getToken(pdas, tokeData.receiver);
+      } catch (err) {
+        this.#logger.warn('Presale contract RPC getToken call fail. Retry...', err);
+        throw err;
+      }
+    }, {
+      retries: RPC_CALL_RETRY,
+      minTimeout: RPC_CALL_MIN_INTERVAL,
+    });
 
     await this.#mintTokens(tokeData, pdas, tokeAccounts.userTokenAccount);
     return { mintPda: pdas.mintPda };
@@ -117,49 +136,70 @@ export class PresaleContractAdapter {
       TOKEN_METADATA_PROGRAM_ID
     );
 
-    const tx = await this.#program.methods
-      .createToken({
-        name,
-        symbol,
-        uri: uri
-      })
-      .accounts({
-        payer: this.#payer.publicKey,
-        mintAccount: pdas.mintPda,
-        adminRoleAccount: pdas.roleAccountPda,
-        authorityPda: pdas.authorityPda,
-        metadataAccount: metadataPda,
-        tokenProgram: TOKEN_PROGRAM_ID,
-        tokenMetadataProgram: TOKEN_METADATA_PROGRAM_ID,
-        systemProgram: anchor.web3.SystemProgram.programId,
-        rent: anchor.web3.SYSVAR_RENT_PUBKEY,
-      })
-      .signers([this.#payer])
-      .rpc();
+    await retry(async (bail) => {
+      try {
+        return await this.#program.methods
+          .createToken({
+            name,
+            symbol,
+            uri: uri
+          })
+          .accounts({
+            payer: this.#payer.publicKey,
+            mintAccount: pdas.mintPda,
+            adminRoleAccount: pdas.roleAccountPda,
+            authorityPda: pdas.authorityPda,
+            metadataAccount: metadataPda,
+            tokenProgram: TOKEN_PROGRAM_ID,
+            tokenMetadataProgram: TOKEN_METADATA_PROGRAM_ID,
+            systemProgram: anchor.web3.SystemProgram.programId,
+            rent: anchor.web3.SYSVAR_RENT_PUBKEY,
+          })
+          .signers([this.#payer])
+          .rpc();
+      } catch (err) {
+        this.#logger.warn('Presale contract RPC createToken call fail. Retry...', err);
+        throw err;
+      }
+    }, {
+      retries: RPC_CALL_RETRY,
+      minTimeout: RPC_CALL_MIN_INTERVAL,
+    });
+
     return pdas;
   }
 
   // name: string, symbol: string, amount: number, receiver: string
   async #mintTokens({ name, symbol, amount, receiver }, pdas, userTokenAccount) {
-    await this.#program.methods
-      .mintToken({
-        name,
-        symbol,
-        mintAmount: new BN(amount).mul(new BN(10).pow(new BN(9))),
-      })
-      .accounts({
-        payer: this.#payer.publicKey,
-        receiver: new anchor.web3.PublicKey(receiver),
-        mintAccount: pdas.mintPda,
-        adminRoleAccount: pdas.roleAccountPda,
-        authorityPda: pdas.authorityPda,
-        tokenAccount: userTokenAccount,
-        tokenProgram: TOKEN_PROGRAM_ID,
-        associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
-        systemProgram: anchor.web3.SystemProgram.programId,
-      })
-      .signers([this.#payer])
-      .rpc();
+    await retry(async (bail) => {
+      try {
+        return await this.#program.methods
+          .mintToken({
+            name,
+            symbol,
+            mintAmount: new BN(amount).mul(new BN(10).pow(new BN(9))),
+          })
+          .accounts({
+            payer: this.#payer.publicKey,
+            receiver: new anchor.web3.PublicKey(receiver),
+            mintAccount: pdas.mintPda,
+            adminRoleAccount: pdas.roleAccountPda,
+            authorityPda: pdas.authorityPda,
+            tokenAccount: userTokenAccount,
+            tokenProgram: TOKEN_PROGRAM_ID,
+            associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
+            systemProgram: anchor.web3.SystemProgram.programId,
+          })
+          .signers([this.#payer])
+          .rpc();
+      } catch (err) {
+        this.#logger.warn('Presale contract RPC mintToken call fail. Retry...', err);
+        throw err;
+      }
+    }, {
+      retries: RPC_CALL_RETRY,
+      minTimeout: RPC_CALL_MIN_INTERVAL,
+    });
   }
 
   //  campaignData: {
@@ -176,44 +216,57 @@ export class PresaleContractAdapter {
   // }
   async createCampaign(campaignData) {
     const pdas = PresaleContractAdapter.getPdas(campaignData.tokenName, campaignData.tokenSymbol, this.#program.programId, this.#payer.publicKey);
-        
+
     // Solana on-chain use sec as timestamp
     const step = new BN(Math.floor(campaignData.step / 1000));
 
-    const tx = await this.#program.methods
-      .createCampaign({
-        tokenName: campaignData.tokenName,
-        tokenSymbol: campaignData.tokenSymbol,
-        step,
-        price: PresaleContractAdapter.parseAmountToBN(campaignData.price, SOL_DECIMALS),// convert to lamports
-        minAmount: PresaleContractAdapter.parseAmountToBN(campaignData.minAmount, SOL_DECIMALS),// convert to lamports
-        maxAmount: PresaleContractAdapter.parseAmountToBN(campaignData.maxAmount, SOL_DECIMALS),// convert to lamports
-        tokenSupply: new BN(campaignData.tokenSupply).mul(new BN(10).pow(new BN(9))),// convert with decimals
-        listingPrice: PresaleContractAdapter.parseAmountToBN(campaignData.listingPrice, SOL_DECIMALS),// convert to lamports
-        numberOfWallets: new BN(campaignData.numberOfWallets),
-        solTreasury: new anchor.web3.PublicKey(campaignData.solTreasury),
-      })
-      .accounts({
-        payer: this.#payer.publicKey,
-        roleAccount: pdas.roleAccountPda,
-        mintAccount: pdas.mintPda,
-        vaultTokenAccount: pdas.vaultTokenAccountPda,
-        campaign: pdas.campaignPda,
-        campaignStats: pdas.campaignStatsPda,
-        tokenProgram: TOKEN_PROGRAM_ID,
-        systemProgram: anchor.web3.SystemProgram.programId,
-      })
-      .signers([this.#payer])
-      .rpc();
-
-    let campaignInfo = null;
-    do {
-      await new Promise((resolve) => setTimeout(resolve, 2000));
+    await retry(async (bail) => {
       try {
-        campaignInfo = await this.#getCampaignInfo(pdas);
-      } catch { };
+        return await this.#program.methods
+          .createCampaign({
+            tokenName: campaignData.tokenName,
+            tokenSymbol: campaignData.tokenSymbol,
+            step,
+            price: PresaleContractAdapter.parseAmountToBN(campaignData.price, SOL_DECIMALS),// convert to lamports
+            minAmount: PresaleContractAdapter.parseAmountToBN(campaignData.minAmount, SOL_DECIMALS),// convert to lamports
+            maxAmount: PresaleContractAdapter.parseAmountToBN(campaignData.maxAmount, SOL_DECIMALS),// convert to lamports
+            tokenSupply: new BN(campaignData.tokenSupply).mul(new BN(10).pow(new BN(9))),// convert with decimals
+            listingPrice: PresaleContractAdapter.parseAmountToBN(campaignData.listingPrice, SOL_DECIMALS),// convert to lamports
+            numberOfWallets: new BN(campaignData.numberOfWallets),
+            solTreasury: new anchor.web3.PublicKey(campaignData.solTreasury),
+          })
+          .accounts({
+            payer: this.#payer.publicKey,
+            roleAccount: pdas.roleAccountPda,
+            mintAccount: pdas.mintPda,
+            vaultTokenAccount: pdas.vaultTokenAccountPda,
+            campaign: pdas.campaignPda,
+            campaignStats: pdas.campaignStatsPda,
+            tokenProgram: TOKEN_PROGRAM_ID,
+            systemProgram: anchor.web3.SystemProgram.programId,
+          })
+          .signers([this.#payer])
+          .rpc();
+      } catch (err) {
+        this.#logger.warn('Presale contract RPC createCampaign call fail. Retry...', err);
+        throw err;
+      }
+    }, {
+      retries: RPC_CALL_RETRY,
+      minTimeout: RPC_CALL_MIN_INTERVAL,
+    });
 
-    } while (!campaignInfo)
+    const campaignInfo = await retry(async (bail) => {
+      try {
+        return await this.#getCampaignInfo(pdas);
+      } catch (err) {
+        this.#logger.warn('Presale contract RPC getCampaignInfo call fail. Retry...', err);
+        throw err;
+      }
+    }, {
+      retries: RPC_CALL_RETRY,
+      minTimeout: RPC_CALL_MIN_INTERVAL,
+    });
 
     return {
       campaignPda: pdas.campaignPda,
@@ -232,18 +285,29 @@ export class PresaleContractAdapter {
     // Solana on-chain use sec as timestamp
     const distributeAt = timestamp ? new BN(Math.floor(timestamp / 1000)) : null
 
-    await this.#program.methods
-      .setStatus({
-        tokenName,
-        tokenSymbol,
-        status: { [status]: {} },
-        distributeAt,
-      })
-      .accounts({
-        campaign: pdas.campaignPda,
-        mintAccount: pdas.mintPda,
-      })
-      .rpc();
+
+    await retry(async (bail) => {
+      try {
+        return await this.#program.methods
+          .setStatus({
+            tokenName,
+            tokenSymbol,
+            status: { [status]: {} },
+            distributeAt,
+          })
+          .accounts({
+            campaign: pdas.campaignPda,
+            mintAccount: pdas.mintPda,
+          })
+          .rpc();
+      } catch (err) {
+        this.#logger.warn('Presale contract RPC setStatus call fail. Retry...', err);
+        throw err;
+      }
+    }, {
+      retries: RPC_CALL_RETRY,
+      minTimeout: RPC_CALL_MIN_INTERVAL,
+    });
   }
 
   readParticipationLogs(callback) {
@@ -413,13 +477,17 @@ export class PresaleContractAdapter {
     const seed = pdas.campaignPda.toBuffer();
 
     // Get fulfilled randomness using VRF waitFulfilled method
-    let randomness = null;
-    do {
-      await new Promise((resolve) => setTimeout(resolve, 2000));
+    const randomness = await retry(async (bail) => {
       try {
-        randomness = await this.#vrf.waitFulfilled(seed);
-      } catch { };
-    } while (!randomness)
+        return await this.#vrf.waitFulfilled(seed);
+      } catch (err) {
+        this.#logger.warn('Presale contract RPC vrf.waitFulfilled call fail. Retry...', err);
+        throw err;
+      }
+    }, {
+      retries: RPC_CALL_RETRY,
+      minTimeout: RPC_CALL_MIN_INTERVAL,
+    });
 
     return {
       randomness: randomness.randomness,
@@ -453,24 +521,34 @@ export class PresaleContractAdapter {
     const configData = await this.#vrf.account.networkState.fetch(config);
     const treasury = configData.config.treasury;
 
-    await this.#program.methods
-      .calculateDistribution({
-        tokenName: tokenName,
-        tokenSymbol: tokenSymbol,
-      })
-      .accounts({
-        signer: this.#payer.publicKey,
-        roleAccount: pdas.roleAccountPda,
-        campaign: pdas.campaignPda,
-        mintAccount: pdas.mintPda,
-        random: random,
-        treasury: treasury,
-        config: config,
-        vrf: this.#vrf.programId,
-        systemProgram: anchor.web3.SystemProgram.programId,
-      })
-      .signers([this.#payer])
-      .rpc();
+    await retry(async (bail) => {
+      try {
+        return await this.#program.methods
+          .calculateDistribution({
+            tokenName: tokenName,
+            tokenSymbol: tokenSymbol,
+          })
+          .accounts({
+            signer: this.#payer.publicKey,
+            roleAccount: pdas.roleAccountPda,
+            campaign: pdas.campaignPda,
+            mintAccount: pdas.mintPda,
+            random: random,
+            treasury: treasury,
+            config: config,
+            vrf: this.#vrf.programId,
+            systemProgram: anchor.web3.SystemProgram.programId,
+          })
+          .signers([this.#payer])
+          .rpc();
+      } catch (err) {
+        this.#logger.warn('Presale contract RPC calculateDistribution call fail. Retry...', err);
+        throw err;
+      }
+    }, {
+      retries: RPC_CALL_RETRY,
+      minTimeout: RPC_CALL_MIN_INTERVAL,
+    });
   }
 
   static getPdas(tokenName, tokenSymbol, programId, userPubkey) {

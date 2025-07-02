@@ -350,7 +350,7 @@ export class PresaleContractAdapter {
           campaign: event.campaign.toBase58()
         });
       },
-      "confirmed"
+      "finalized"
     );
   }
 
@@ -412,7 +412,7 @@ export class PresaleContractAdapter {
           status: Object.keys(event.status)[0],
         });
       },
-      "confirmed"
+      "finalized"
     );
   }
 
@@ -459,7 +459,7 @@ export class PresaleContractAdapter {
           campaign: event.campaign.toBase58()
         });
       },
-      "confirmed"
+      "finalized"
     );
   }
 

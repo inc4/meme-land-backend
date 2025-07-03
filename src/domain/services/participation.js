@@ -4,21 +4,19 @@ export class ParticipationService {
   #dataModel;
   #campaignService;
   #presaleContract;
-  #eventBus;
   #composeDataPage;
   #logger;
   #campaignCache;
 
-  constructor(dataModel, campaignService, presaleContract, eventBus, pageDataComposer, logger) {
+  constructor(dataModel, campaignService, presaleContract, pageDataComposer, logger) {
     this.#dataModel = dataModel;
     this.#campaignService = campaignService;
     this.#presaleContract = presaleContract;
-    this.#eventBus = eventBus;
     this.#composeDataPage = pageDataComposer;
     this.#logger = logger;
     this.#campaignCache = new Map();
-    this.#presaleContract.readParticipationLogs(this.#handleParticipationEvent.bind(this));
-    this.#eventBus.on('CalculateDistributionEvent', this.#handleCalculateDistributionEvent.bind(this));
+    this.#presaleContract.subscribe('participateEvent', this.#handleParticipationEvent.bind(this));
+    this.#presaleContract.subscribe('calculateDistributionEvent', this.#handleCalculateDistributionEvent.bind(this));
   }
 
   async get(conditions, page = 0, limit = 10) {
@@ -46,6 +44,12 @@ export class ParticipationService {
     return campaignId;
   }
 
+  // eventData: {
+  //   tokenName: String,
+  //   tokenSymbol: String,
+  //   solAmount: Decimal,
+  //   tokenAmount: Decimal,
+  // }
   async #handleParticipationEvent(eventData) {
     this.#logger.debug('Participation event: ', eventData);
 

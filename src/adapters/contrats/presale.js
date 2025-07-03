@@ -23,7 +23,10 @@ export class PresaleContractAdapter {
   #logger;
   #payer;
   #program;
+  #parser;
   #vrf;
+  #eventHandlers;
+  #castEventResult;
 
   constructor(logger) {
     this.#logger = logger;
@@ -31,8 +34,17 @@ export class PresaleContractAdapter {
     anchor.setProvider(provider);
     this.#payer = provider.wallet.payer;
     this.#program = new anchor.Program(idl, provider);
+    this.#parser = new anchor.EventParser(this.#program.programId, this.#program.coder);
     this.#vrf = new Orao(provider);
+    this.#eventHandlers = {};// map of event name to handlers array
+    this.#castEventResult = {
+      calculateDistributionEvent: this.#castCalculateDistributionEvent.bind(this),
+      participateEvent: this.#castParticipateEvent.bind(this),
+      setStatusEvent: this.#castSetStatusEvent.bind(this),
+    };
+    this.#handleEvents();
   }
+
 
   get payer() {
     return this.#payer;
@@ -310,157 +322,65 @@ export class PresaleContractAdapter {
     });
   }
 
-  readParticipationLogs(callback) {
-    const discriminator = idl.events.find((e) => e.name === 'ParticipateEvent').discriminator;
-    const discriminatorBuffer = Buffer.from(discriminator);
+  subscribe(eventName, callback) {
+    if (!this.#castEventResult[eventName]) {
+      throw new Error(`Event ${eventName} not supported!`);
+    }
 
+    if (!this.#eventHandlers[eventName]) {
+      this.#eventHandlers[eventName] = [];
+    }
+
+    this.#eventHandlers[eventName].push(callback);
+  }
+
+
+  #handleEvents() {
     this.#program.provider.connection.onLogs(
       this.#program.programId,
       (logs, ctx) => {
-        const programDataLine = logs.logs.find(line => line.startsWith("Program data: "));
-        if (!programDataLine) return;
+        for (const event of this.#parser.parseLogs(logs.logs)) {
+          if (this.#eventHandlers[event.name]) {
+            this.#eventHandlers[event.name].forEach((callback) => {
+              callback(
+                this.#castEventResult[event.name](event.data)
+              );
+            });
+          }
+        }
 
-        const base64Payload = programDataLine.replace("Program data: ", "")
-        const eventBuffer = Buffer.from(base64Payload, 'base64');
-
-        const prefix = eventBuffer.subarray(0, 8);
-        if (!prefix.equals(discriminatorBuffer)) return;
-
-        const eventDataBuffer = eventBuffer.subarray(8);
-
-        const ParticipateEventLayout = borsh.struct([
-          borsh.str('token_name'),
-          borsh.str('token_symbol'),
-          borsh.u64('sol_amount'),
-          borsh.u64('token_amount'),
-          borsh.publicKey('mint_account'),
-          borsh.publicKey('campaign'),
-          borsh.publicKey('participant_pubkey')
-        ]);
-
-        const event = ParticipateEventLayout.decode(eventDataBuffer);
-
-        return callback({
-          tokenName: event.token_name,
-          tokenSymbol: event.token_symbol,
-          solAmount: new Decimal(event.sol_amount.toString()).div('1e9'),
-          tokenAmount: new Decimal(event.token_amount.toString()).div('1e9'),
-          mintAccount: event.mint_account.toBase58(),
-          participationAccount: event.participant_pubkey.toBase58(),
-          campaign: event.campaign.toBase58()
-        });
       },
       "finalized"
     );
   }
 
-  readSetStatusLogs(callback) {
-    const discriminator = idl.events.find((e) => e.name === 'SetStatusEvent').discriminator;
-    const discriminatorBuffer = Buffer.from(discriminator);
-
-    this.#program.provider.connection.onLogs(
-      this.#program.programId,
-      (logs, ctx) => {
-        const programDataLine = logs.logs.find(line => line.startsWith("Program data: "));
-        if (!programDataLine) return;
-
-        const base64Payload = programDataLine.replace("Program data: ", "")
-        const eventBuffer = Buffer.from(base64Payload, 'base64');
-
-        const prefix = eventBuffer.subarray(0, 8);
-        if (!prefix.equals(discriminatorBuffer)) return;
-
-        const eventDataBuffer = eventBuffer.subarray(8);
-
-        // pub enum CampaignStatus {
-        //     Upcoming,
-        //     PresaleOpened,
-        //     PresaleFinished,
-        //     DistributionOpened(u64),
-        //     DistributionFinished,
-        // }
-        const CampaignStatusLayout = borsh.rustEnum([
-          borsh.struct([], "Upcoming"),
-          borsh.struct([], "PresaleOpened"),
-          borsh.struct([], "PresaleFinished"),
-          borsh.struct([], "DistributionOpened"),
-          borsh.struct([], "DistributionFinished"),
-        ]);
-
-        // #[event]
-        // pub struct SetStatusEvent {
-        //     pub token_name: String,
-        //     pub token_symbol: String,
-        //     pub status: CampaignStatus,
-        //     pub mint_account: Pubkey,
-        //     pub campaign: Pubkey,
-        // }
-
-        const SetStatusEventLayout = borsh.struct([
-          borsh.str('token_name'),
-          borsh.str('token_symbol'),
-          CampaignStatusLayout.replicate("status"),
-          borsh.publicKey('mint_account'),
-          borsh.publicKey('campaign'),
-        ]);
-
-        const event = SetStatusEventLayout.decode(eventDataBuffer);
-
-        return callback({
-          tokenName: event.token_name,
-          tokenSymbol: event.token_symbol,
-          status: Object.keys(event.status)[0],
-        });
-      },
-      "finalized"
-    );
+  #castParticipateEvent(event) {
+    return {
+      tokenName: event.tokenName,
+      tokenSymbol: event.tokenSymbol,
+      solAmount: new Decimal(event.solAmount.toString()).div('1e9'),
+      tokenAmount: new Decimal(event.tokenAmount.toString()).div('1e9'),
+      mintAccount: event.mintAccount.toBase58(),
+      participationAccount: event.participantPubkey.toBase58(),
+      campaign: event.campaign.toBase58()
+    };
   }
 
-  readDistributionLogs(callback) {
-    const discriminator = idl.events.find((e) => e.name === 'CalculateDistributionEvent').discriminator;
-    const discriminatorBuffer = Buffer.from(discriminator);
+  #castSetStatusEvent(event) {
+    return {
+      tokenName: event.tokenName,
+      tokenSymbol: event.tokenSymbol,
+      status: Object.keys(event.status)[0],
+    };
+  }
 
-    this.#program.provider.connection.onLogs(
-      this.#program.programId,
-      (logs, ctx) => {
-        const programDataLine = logs.logs.find(line => line.startsWith("Program data: "));
-        if (!programDataLine) return;
-
-        const base64Payload = programDataLine.replace("Program data: ", "")
-        const eventBuffer = Buffer.from(base64Payload, 'base64');
-
-
-        const prefix = eventBuffer.subarray(0, 8);
-
-        if (!prefix.equals(discriminatorBuffer)) return;
-
-        const eventDataBuffer = eventBuffer.subarray(8);
-
-        // #[event]
-        // pub struct CalculateDistributionEvent {
-        //     pub token_name: String,
-        //     pub token_symbol: String,
-        //     pub mint_account: Pubkey,
-        //     pub campaign: Pubkey,
-        // }
-        const CalculateDistributionEventLayout = borsh.struct([
-          borsh.str('token_name'),
-          borsh.str('token_symbol'),
-          borsh.publicKey('mint_account'),
-          borsh.publicKey('campaign'),
-        ]);
-
-        const event = CalculateDistributionEventLayout.decode(eventDataBuffer);
-
-        return callback({
-          tokenName: event.token_name,
-          tokenSymbol: event.token_symbol,
-          mintAccount: event.mint_account.toBase58(),
-          campaign: event.campaign.toBase58()
-        });
-      },
-      "finalized"
-    );
+  #castCalculateDistributionEvent(event) {
+    return {
+      tokenName: event.tokenName,
+      tokenSymbol: event.tokenSymbol,
+      mintAccount: event.mintAccount.toBase58(),
+      campaign: event.campaign.toBase58()
+    };
   }
 
   // name: string, symbol: string

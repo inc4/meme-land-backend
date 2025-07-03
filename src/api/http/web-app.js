@@ -3,7 +3,6 @@ import winston from 'winston';
 import { v4 as uuidv4 } from 'uuid';
 import cors from 'cors';
 import mongoose from 'mongoose';
-import EventEmitter from 'events';
 
 import { WinstonLoggerAdapter, PresaleContractAdapter } from '../../adapters/index.js';
 import {
@@ -30,11 +29,6 @@ const logger = new WinstonLoggerAdapter(winston, config.logger);
 
 mongoose.connect(config.mongo.url, config.mongo.options);
 
-// set flag for use unhandled rejection handler
-const eventEmitter = new EventEmitter({ captureRejections: true });
-// set handler for unhandled rejection(used with async callbacks)
-eventEmitter[Symbol.for('nodejs.rejection')] = logger.error.bind(logger);
-
 const presaleContractAdapter = new PresaleContractAdapter(logger);
 const walletService = new WalletService(
   walletModel,
@@ -52,7 +46,6 @@ const walletController = new WalletController(
 const campaignService = new CampaignService(
   campaignModel,
   presaleContractAdapter,
-  eventEmitter,
   DataPageComposer.composePageInfo,
   config.presaleDefaults,
   logger
@@ -68,7 +61,6 @@ const participationService = new ParticipationService(
   participationModel,
   campaignService,
   presaleContractAdapter,
-  eventEmitter,
   DataPageComposer.composePageInfo,
   logger
 );

@@ -5,17 +5,15 @@ import { v4 as uuidv4 } from 'uuid';
 export class CampaignService {
   #dataModel;
   #presaleContract;
-  #eventBus;
   #composeDataPage;
   #settings;
   #logger;
   #statusDate;
   #isExistedCampaignsProcessed;
 
-  constructor(dataModel, presaleContract, eventBus, pageDataComposer, settings, logger) {
+  constructor(dataModel, presaleContract, pageDataComposer, settings, logger) {
     this.#dataModel = dataModel;
     this.#presaleContract = presaleContract;
-    this.#eventBus = eventBus;
     this.#composeDataPage = pageDataComposer;
     this.#settings = settings;
     this.#logger = logger;
@@ -28,7 +26,7 @@ export class CampaignService {
     };
     this.#isExistedCampaignsProcessed = false; // indicate that timers for existed campaign was restored
     this.#setExistedCampaignsTimers(); // set timers after server was down
-    this.#presaleContract.readSetStatusLogs(this.#handleSetStatusEvent.bind(this))
+    this.#presaleContract.subscribe('setStatusEvent', this.#handleSetStatusEvent.bind(this))
   }
 
   async addCampaign(data) {
@@ -120,8 +118,6 @@ export class CampaignService {
           date: campaignData.distributionUTC,
         }
       );
-
-      this.#eventBus.emit('CalculateDistributionEvent', { tokenName: campaignData.tokenName, tokenSymbol: campaignData.tokenSymbol });
     }, CampaignService.ts(campaignData.distributionUTC) - currentTs);
     this.#logger.info('CalculateDistribution timer set: ',
       {
@@ -168,9 +164,9 @@ export class CampaignService {
   }
 
   // eventData: {
-  //   tokenName: event.token_name,
-  //   tokenSymbol: event.token_symbol,
-  //   status: event.status,
+  //   tokenName: String,
+  //   tokenSymbol: String,
+  //   status: String,
   // }
   async #handleSetStatusEvent(eventData) {
     this.#logger.info('SetStatus event: ', eventData);

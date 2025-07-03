@@ -17,6 +17,7 @@ const TOKEN_METADATA_PROGRAM_ID = new anchor.web3.PublicKey(
 const SOL_DECIMALS = 9;
 const RPC_CALL_RETRY = 5;
 const RPC_CALL_MIN_INTERVAL = 1000;
+const SLOT_BATCH_SIZE = 1000;
 
 export class PresaleContractAdapter {
   #logger;
@@ -43,6 +44,45 @@ export class PresaleContractAdapter {
     };
     this.#handleEvents();
   }
+
+  async recoverParticipationFromHistory(startSlot, callback) {
+
+    const endSlot = await this.#program.provider.connection.getSlot('finalized');
+
+    let count = 0;
+
+    for (let currentStart = startSlot; currentStart <= endSlot; currentStart += SLOT_BATCH_SIZE) {
+      const currentEnd = Math.min(currentStart + SLOT_BATCH_SIZE - 1, endSlot);
+
+      try {
+        const logs = await this.#program.provider.connection.getLogs(
+          this.#program.programId,
+          currentStart,
+          currentEnd,
+          { commitment: 'finalized' }
+        );
+
+        for (const logEntry of logs) {
+          const parsed = this.#parser.parseLogs(logEntry.logs);
+          for (const event of parsed) {
+            if (event.name === 'ParticipateEvent') {
+              event.data.lastProcessedSlot = logEntry.slot;
+              callback(event.data);
+              count++;
+            }
+          }
+        }
+
+        this.#logger.debug(` Processed logs from ${currentStart} to ${currentEnd}`);
+      } catch (err) {
+        this.#logger.warn(`Failed to fetch logs from ${currentStart} to ${currentEnd}:`, err.message);
+        // optionally: retry logic or break loop if persistent
+      }
+    }
+
+    this.#logger.info(`🎯 Replayed ${count} ParticipateEvent logs from slot ${startSlot} to ${endSlot}`);
+  }
+
 
 
   get payer() {
@@ -341,6 +381,7 @@ export class PresaleContractAdapter {
         for (const event of this.#parser.parseLogs(logs.logs)) {
           if (this.#eventHandlers[event.name]) {
             this.#eventHandlers[event.name].forEach((callback) => {
+              event.data.lastProcessedSlot = ctx.slot
               callback(
                 this.#castEventResult[event.name](event.data)
               );
@@ -361,7 +402,8 @@ export class PresaleContractAdapter {
       tokenAmount: new Decimal(event.tokenAmount.toString()).div('1e9'),
       mintAccount: event.mintAccount.toBase58(),
       participationAccount: event.participantPubkey.toBase58(),
-      campaign: event.campaign.toBase58()
+      campaign: event.campaign.toBase58(),
+      lastProcessedSlot: event.lastProcessedSlot
     };
   }
 

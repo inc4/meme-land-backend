@@ -7,6 +7,7 @@ export class ParticipationService {
   #composeDataPage;
   #logger;
   #campaignCache;
+  #isExistedParticipationProcessed
 
   constructor(dataModel, campaignService, presaleContract, pageDataComposer, logger) {
     this.#dataModel = dataModel;
@@ -15,6 +16,8 @@ export class ParticipationService {
     this.#composeDataPage = pageDataComposer;
     this.#logger = logger;
     this.#campaignCache = new Map();
+    this.#isExistedParticipationProcessed = false;
+    this.#restoreStateFromLogs()
     this.#presaleContract.subscribe('participateEvent', this.#handleParticipationEvent.bind(this));
     this.#presaleContract.subscribe('calculateDistributionEvent', this.#handleCalculateDistributionEvent.bind(this));
   }
@@ -44,15 +47,55 @@ export class ParticipationService {
     return campaignId;
   }
 
+  async #getLastProcessedSlot() {
+    const result = await this.#dataModel
+      .findOne({ lastProcessedSlot: { $exists: true } })
+      .sort({ lastProcessedSlot: -1 })
+      .exec();
+    return result.lastProcessedSlot
+  }
+
+  async #waitUntilExistedParticipantsProcessed(intervalMs = 100) {
+    while (!this.#isExistedParticipationProcessed) {
+      await new Promise(res => setTimeout(res, intervalMs));
+    }
+  }
+
+  async #restoreStateFromLogs() {
+    const lastProcessedSlot = await this.#getLastProcessedSlot()
+
+    await this.presaleContract.replayEventsFromSlot(lastProcessedSlot, this.#handleSkippedEvent.bind(this))
+
+    this.#isExistedParticipationProcessed = true;
+  }
+
+  async #waitUntilExistedParticipantsProcessed(intervalMs = 100) {
+    while (!this.#isExistedParticipationProcessed) {
+      await new Promise(res => setTimeout(res, intervalMs));
+    }
+  }
+
+
+  async #handleParticipationEvent(eventData) {
+    if (!this.#isExistedParticipationProcessed) {
+      await this.#waitUntilExistedParticipantsProcessed();
+    }
+    this.#logger.debug('Participation event: ', eventData);
+    await this.#saveParticipationRecord(eventData);
+  }
+
+  async #handleSkippedEvent(eventData) {
+    this.#logger.debug('Skipped participation event: ', eventData);
+    await this.#saveParticipationRecord(eventData);
+  }
+
   // eventData: {
   //   tokenName: String,
   //   tokenSymbol: String,
   //   solAmount: Decimal,
   //   tokenAmount: Decimal,
   // }
-  async #handleParticipationEvent(eventData) {
-    this.#logger.debug('Participation event: ', eventData);
-
+  async #saveParticipationRecord(eventData) {
     const campaignId = await this.#getCampaignId(eventData.tokenName, eventData.tokenSymbol);
 
     const record = {
@@ -61,6 +104,7 @@ export class ParticipationService {
       wallet: eventData.participationAccount,
       solSpent: eventData.solAmount,
       tokenAllocation: eventData.tokenAmount,
+      lastProcessedSlot: eventData.lastProcessedSlot
     };
 
     try {
@@ -71,6 +115,7 @@ export class ParticipationService {
       }
     }
   }
+
 
   // eventData: {
   //   tokenName: String,

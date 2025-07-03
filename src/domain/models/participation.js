@@ -32,6 +32,10 @@ const participationSchema = new mongoose.Schema({
     type: mongoose.Types.Decimal128,
     required: true,
   },
+  lastProcessedSlot: {
+    type: Number,
+    required: true,
+  },
   createdAt: {
     type: Date,
     default: Date.now,

@@ -1,5 +1,5 @@
 {
-  "address": "71J6bBphDWPXrjSkQ8Gx8dVd8jASR7Xp4KELapfSaSWq",
+  "address": "ApWd2yinkjm7hXUAadnqYtc8P4ARYmc8xUccsk17pfLY",
   "metadata": {
     "name": "mem_land",
     "version": "0.1.0",
@@ -1948,46 +1948,6 @@
           }
         },
         {
-          "name": "participant_pubkey",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  112,
-                  97,
-                  114,
-                  116,
-                  105,
-                  99,
-                  105,
-                  112,
-                  97,
-                  110,
-                  116,
-                  95,
-                  112,
-                  117,
-                  98,
-                  107,
-                  101,
-                  121
-                ]
-              },
-              {
-                "kind": "account",
-                "path": "campaign"
-              },
-              {
-                "kind": "account",
-                "path": "campaign_stats.total_participants",
-                "account": "CampaignStats"
-              }
-            ]
-          }
-        },
-        {
           "name": "campaign_stats",
           "writable": true,
           "pda": {
@@ -2244,19 +2204,6 @@
         32,
         196,
         177
-      ]
-    },
-    {
-      "name": "ParticipantPubKey",
-      "discriminator": [
-        255,
-        236,
-        19,
-        188,
-        200,
-        179,
-        66,
-        247
       ]
     },
     {
@@ -3006,18 +2953,6 @@
           {
             "name": "amount",
             "type": "u64"
-          }
-        ]
-      }
-    },
-    {
-      "name": "ParticipantPubKey",
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "key",
-            "type": "pubkey"
           }
         ]
       }

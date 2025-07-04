@@ -55,16 +55,10 @@ export class ParticipationService {
     return result.lastProcessedSlot
   }
 
-  async #waitUntilExistedParticipantsProcessed(intervalMs = 100) {
-    while (!this.#isExistedParticipationProcessed) {
-      await new Promise(res => setTimeout(res, intervalMs));
-    }
-  }
-
   async #restoreStateFromLogs() {
     const lastProcessedSlot = await this.#getLastProcessedSlot()
 
-    await this.presaleContract.replayEventsFromSlot(lastProcessedSlot, this.#handleSkippedEvent.bind(this))
+    await this.#presaleContract.recoverParticipationFromHistory(lastProcessedSlot, this.#handleSkippedEventsBatch.bind(this))
 
     this.#isExistedParticipationProcessed = true;
   }
@@ -84,9 +78,29 @@ export class ParticipationService {
     await this.#saveParticipationRecord(eventData);
   }
 
-  async #handleSkippedEvent(eventData) {
-    this.#logger.debug('Skipped participation event: ', eventData);
-    await this.#saveParticipationRecord(eventData);
+  async #handleSkippedEventsBatch(eventDataList) {
+    this.#logger.debug(`Handling skipped participation batch. Count: ${eventDataList.length}`);
+
+    const records = await Promise.all(eventDataList.map(async (eventData) => {
+      const campaignId = await this.#getCampaignId(eventData.tokenName, eventData.tokenSymbol);
+
+      return {
+        participationId: uuidv4(),
+        campaignId,
+        wallet: eventData.participationAccount,
+        solSpent: eventData.solAmount,
+        tokenAllocation: eventData.tokenAmount,
+        lastProcessedSlot: eventData.lastProcessedSlot
+      };
+    }));
+
+    try {
+      await this.#dataModel.insertMany(records, { ordered: false });
+      this.#logger.info(`Inserted ${records.length} skipped participants`);
+    } catch (err) {
+      this.#logger.warn('Some skipped participants failed to insert:', err.message);
+      if (err.code !== 11000) throw err;
+    }
   }
 
   // eventData: {

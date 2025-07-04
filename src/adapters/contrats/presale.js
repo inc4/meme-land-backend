@@ -18,6 +18,7 @@ const SOL_DECIMALS = 9;
 const RPC_CALL_RETRY = 5;
 const RPC_CALL_MIN_INTERVAL = 1000;
 const SLOT_BATCH_SIZE = 1000;
+const PARTICIPATION_BATCH_SIZE = 500;
 
 export class PresaleContractAdapter {
   #logger;
@@ -46,10 +47,10 @@ export class PresaleContractAdapter {
   }
 
   async recoverParticipationFromHistory(startSlot, callback) {
-
     const endSlot = await this.#program.provider.connection.getSlot('finalized');
 
     let count = 0;
+    let batch = [];
 
     for (let currentStart = startSlot; currentStart <= endSlot; currentStart += SLOT_BATCH_SIZE) {
       const currentEnd = Math.min(currentStart + SLOT_BATCH_SIZE - 1, endSlot);
@@ -67,20 +68,28 @@ export class PresaleContractAdapter {
           for (const event of parsed) {
             if (event.name === 'ParticipateEvent') {
               event.data.lastProcessedSlot = logEntry.slot;
-              callback(event.data);
+              batch.push(event.data);
               count++;
+
+              if (batch.length >= PARTICIPATION_BATCH_SIZE) {
+                await callback(batch);
+                batch = [];
+              }
             }
           }
         }
 
-        this.#logger.debug(` Processed logs from ${currentStart} to ${currentEnd}`);
+        this.#logger.debug(`Processed logs from ${currentStart} to ${currentEnd}`);
       } catch (err) {
         this.#logger.warn(`Failed to fetch logs from ${currentStart} to ${currentEnd}:`, err.message);
-        // optionally: retry logic or break loop if persistent
       }
     }
 
-    this.#logger.info(`🎯 Replayed ${count} ParticipateEvent logs from slot ${startSlot} to ${endSlot}`);
+    if (batch.length > 0) {
+      await callback(batch);
+    }
+
+    this.#logger.info(`Replayed total ${count} participation events`);
   }
 
 

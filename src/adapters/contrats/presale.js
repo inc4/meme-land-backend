@@ -75,6 +75,10 @@ export class PresaleContractAdapter {
                 await callback(batch);
                 batch = [];
               }
+
+              if (batch.length > 0) {
+                await callback(batch);
+              }
             }
           }
         }
@@ -85,9 +89,6 @@ export class PresaleContractAdapter {
       }
     }
 
-    if (batch.length > 0) {
-      await callback(batch);
-    }
 
     this.#logger.info(`Replayed total ${count} participation events`);
   }

@@ -17,9 +17,9 @@ export class ParticipationService {
     this.#logger = logger;
     this.#campaignCache = new Map();
     this.#isExistedParticipationProcessed = false;
-    this.#restoreStateFromLogs()
     this.#presaleContract.subscribe('participateEvent', this.#handleParticipationEvent.bind(this));
     this.#presaleContract.subscribe('calculateDistributionEvent', this.#handleCalculateDistributionEvent.bind(this));
+    this.#restoreStateFromLogs()
   }
 
   async get(conditions, page = 0, limit = 10) {
@@ -48,15 +48,17 @@ export class ParticipationService {
   }
 
   async #getLastProcessedSlot() {
-    const result = await this.#dataModel
-      .findOne({ lastProcessedSlot: { $exists: true } })
-      .sort({ lastProcessedSlot: -1 })
-      .exec();
-    return result.lastProcessedSlot
+    return (await this.#dataModel
+      .findOne()
+      .sort('-lastProcessedSlot')
+      .select('lastProcessedSlot')
+      .lean())
+      ?.lastProcessedSlot || null;
   }
 
   async #restoreStateFromLogs() {
     const lastProcessedSlot = await this.#getLastProcessedSlot()
+    if (!lastProcessedSlot) return
 
     await this.#presaleContract.recoverParticipationFromHistory(lastProcessedSlot, this.#handleSkippedEventsBatch.bind(this))
 

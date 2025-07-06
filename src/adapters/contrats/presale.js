@@ -2,7 +2,7 @@ import * as anchor from "@coral-xyz/anchor";
 import Decimal from 'decimal.js';
 import { BN } from "bn.js";
 import { sha256 } from "js-sha256";
-import { PublicKey } from "@solana/web3.js";
+import { PublicKey, Connection } from "@solana/web3.js";
 import retry from 'async-retry';
 import { TOKEN_PROGRAM_ID, ASSOCIATED_TOKEN_PROGRAM_ID, getAssociatedTokenAddress } from "@solana/spl-token";
 import { networkStateAccountAddress, Orao, randomnessAccountAddress } from "@orao-network/solana-vrf";
@@ -47,7 +47,8 @@ export class PresaleContractAdapter {
   }
 
   async recoverParticipationFromHistory(startSlot, callback) {
-    const endSlot = await this.#program.provider.connection.getSlot('finalized');
+    const connection = new Connection(this.#program.provider.connection._rpcEndpoint, 'finalized')
+    const endSlot = await connection.getSlot('finalized');
 
     let count = 0;
     let batch = [];
@@ -56,7 +57,7 @@ export class PresaleContractAdapter {
       const currentEnd = Math.min(currentStart + SLOT_BATCH_SIZE - 1, endSlot);
 
       try {
-        const logs = await this.#program.provider.connection.getLogs(
+        const logs = await connection.getLogs(
           this.#program.programId,
           currentStart,
           currentEnd,

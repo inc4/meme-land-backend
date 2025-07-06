@@ -12,7 +12,7 @@ env:
   AWS_REGION: eu-central-1
   ECR_REGISTRY: 043459177569.dkr.ecr.eu-central-1.amazonaws.com
   ECR_REPOSITORY: meme-land-backend
-  IP_ADDR: "3.64.250.250"
+  IP_ADDR: "3.69.1.5"
 
 jobs:
   build-and-push:

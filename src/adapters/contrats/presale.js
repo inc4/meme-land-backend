@@ -31,28 +31,36 @@ export class PresaleContractAdapter {
 
   constructor(logger) {
     this.#logger = logger;
-    const provider = anchor.AnchorProvider.env();
+
+    const rpcEndpoint = process.env.ANCHOR_PROVIDER_URL;
+    const connection = new anchor.web3.Connection(rpcEndpoint, 'finalized');
+
+    const wallet = anchor.Wallet.local();
+    const provider = new anchor.AnchorProvider(connection, wallet, {
+      preflightCommitment: 'finalized',
+      commitment: 'finalized',
+    });
+
     anchor.setProvider(provider);
+
     this.#payer = provider.wallet.payer;
     this.#program = new anchor.Program(idl, provider);
     this.#parser = new anchor.EventParser(this.#program.programId, this.#program.coder);
     this.#vrf = new Orao(provider);
-    this.#eventHandlers = {};// map of event name to handlers array
+    this.#eventHandlers = {};
     this.#castEventResult = {
       calculateDistributionEvent: this.#castCalculateDistributionEvent.bind(this),
       participateEvent: this.#castParticipateEvent.bind(this),
       setStatusEvent: this.#castSetStatusEvent.bind(this),
     };
+
     this.#handleEvents();
   }
 
-  async recoverParticipationFromSignatures(startSlot = 392452685, callback) {
-    const connection = new anchor.web3.Connection(
-      this.#program.provider.connection._rpcEndpoint,
-      'confirmed'
-    );
+  async recoverParticipationFromSignatures(startSlot, callback) {
+    const connection = this.#program.provider.connection;
 
-    const RATE_LIMIT = 10; // max requests per second
+    const RATE_LIMIT = 10;
     const DELAY_MS = 1000 / RATE_LIMIT;
 
     let before = undefined;
@@ -63,22 +71,25 @@ export class PresaleContractAdapter {
       const signatures = await connection.getSignaturesForAddress(this.#program.programId, {
         limit: SLOT_BATCH_SIZE,
         before,
+        commitment: 'finalized'
       });
 
       if (!signatures.length) break;
-
+      391823224
+      391826946
       for (const sigInfo of signatures) {
         if (sigInfo.slot < startSlot) {
           if (batch.length) await callback(batch);
-          this.#logger.info(`Replayed total ${count} participation events`);
+          this.#logger.info(`✅ Replayed total ${count} participation events`);
           return;
         }
 
-        await new Promise((res) => setTimeout(res, DELAY_MS));
+        await new Promise((res) => setTimeout(res, DELAY_MS)); // ⏳ rate limit
 
-        const tx = await connection.getTransaction(sigInfo.signature, {
-          commitment: 'confirmed',
+        const tx = await connection.getParsedTransaction(sigInfo.signature, {
+          commitment: 'finalized',
         });
+        console.log('🚀 - PresaleContractAdapter - recoverParticipationFromSignatures - tx:', tx)
 
         if (!tx?.meta?.logMessages) continue;
 
@@ -100,12 +111,7 @@ export class PresaleContractAdapter {
 
       before = signatures[signatures.length - 1].signature;
     }
-
-    if (batch.length) {
-      await callback(batch);
-    }
-
-    this.#logger.info(`Replayed total ${count} participation events`);
+    this.#logger.info(`✅ Replayed total ${count} participation events`);
   }
 
   get payer() {

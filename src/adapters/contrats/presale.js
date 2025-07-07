@@ -7,7 +7,7 @@ import retry from 'async-retry';
 import { TOKEN_PROGRAM_ID, ASSOCIATED_TOKEN_PROGRAM_ID, getAssociatedTokenAddress } from "@solana/spl-token";
 import { networkStateAccountAddress, Orao, randomnessAccountAddress } from "@orao-network/solana-vrf";
 
-import idl from "./mem_land.json" with { type: 'json' };
+import idl from "./mem_land.json" assert { type: 'json' };
 
 // Token Metadata Program ID
 const TOKEN_METADATA_PROGRAM_ID = new anchor.web3.PublicKey(
@@ -58,18 +58,31 @@ export class PresaleContractAdapter {
     this.#handleEvents();
   }
 
-  async recoverParticipationFromSignatures(startSlot, callback) {
-    const connection = this.#program.provider.connection;
 
-    const RATE_LIMIT = 10;
-    const DELAY_MS = 1000 / RATE_LIMIT;
+  async waitForNextSlot() {
+    const current = await this.#program.provider.connection.getSlot(this.#anchorOptions.commitmentLevel);
+
+    while (true) {
+      const next = await this.#program.provider.connection.getSlot(this.#anchorOptions.commitmentLevel);
+
+      if (next > current + this.#anchorOptions.logsOffset) {
+        return next;
+      }
+      await new Promise(resolve => setTimeout(resolve, 100));
+    }
+  }
+
+  async recoverParticipationFromSignatures(startSlot, callback) {
+    await this.waitForNextSlot();
+
+    const requestDelay = 1000 / this.#anchorOptions.rateLimit;
 
     let before = undefined;
     let count = 0;
     let batch = [];
 
     while (true) {
-      const signatures = await connection.getSignaturesForAddress(this.#program.programId, {
+      const signatures = await this.#program.provider.connection.getSignaturesForAddress(this.#program.programId, {
         limit: SLOT_BATCH_SIZE,
         before,
         commitment: this.#anchorOptions.commitmentLevel
@@ -78,15 +91,15 @@ export class PresaleContractAdapter {
       if (!signatures.length) break;
 
       for (const sigInfo of signatures) {
-        if (sigInfo.slot < startSlot) {
+        if (startSlot && sigInfo.slot < startSlot) {
           if (batch.length) await callback(batch);
-          this.#logger.info(`✅ Replayed total ${count} participation events`);
+          this.#logger.info(`Replayed total ${count} participation events`);
           return;
         }
 
-        await new Promise((res) => setTimeout(res, DELAY_MS)); // ⏳ rate limit
+        await new Promise((res) => setTimeout(res, requestDelay)); // rate limit
 
-        const tx = await connection.getParsedTransaction(sigInfo.signature, {
+        const tx = await this.#program.provider.connection.getParsedTransaction(sigInfo.signature, {
           commitment: this.#anchorOptions.commitmentLevel,
         });
 
@@ -110,7 +123,9 @@ export class PresaleContractAdapter {
 
       before = signatures[signatures.length - 1].signature;
     }
-    this.#logger.info(`✅ Replayed total ${count} participation events`);
+    if (batch.length) await callback(batch);
+
+    this.#logger.info(`Replayed total ${count} participation events`);
   }
 
   get payer() {

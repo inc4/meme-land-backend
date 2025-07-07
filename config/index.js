@@ -10,6 +10,8 @@ const config = {};
 config.anchorOptions = {
   commitmentLevel: env.ANCHOR_COMMITMENT_LEVEL,
   providerUrl: env.ANCHOR_PROVIDER_URL,
+  logsOffset: Number(env.ANCHOR_LOGS_OFFSET),
+  rateLimit: Number(env.ANCHOR_RATE_LIMIT)
 }
 
 

@@ -58,10 +58,8 @@ export class ParticipationService {
 
   async #restoreStateFromLogs() {
     const lastProcessedSlot = await this.#getLastProcessedSlot()
-    if (lastProcessedSlot) {
-      await this.#presaleContract.recoverParticipationFromSignatures(lastProcessedSlot, this.#handleSkippedEventsBatch.bind(this))
-    }
     this.#isExistedParticipationProcessed = true;
+    await this.#presaleContract.recoverParticipationFromSignatures(lastProcessedSlot, this.#handleSkippedEventsBatch.bind(this))
   }
 
   async #waitUntilExistedParticipantsProcessed(intervalMs = 100) {

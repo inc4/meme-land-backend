@@ -7,7 +7,7 @@ import retry from 'async-retry';
 import { TOKEN_PROGRAM_ID, ASSOCIATED_TOKEN_PROGRAM_ID, getAssociatedTokenAddress } from "@solana/spl-token";
 import { networkStateAccountAddress, Orao, randomnessAccountAddress } from "@orao-network/solana-vrf";
 
-import idl from "./mem_land.json" assert { type: 'json' };
+import idl from "./mem_land.json" with { type: 'json' };
 
 // Token Metadata Program ID
 const TOKEN_METADATA_PROGRAM_ID = new anchor.web3.PublicKey(
@@ -29,16 +29,16 @@ export class PresaleContractAdapter {
   #eventHandlers;
   #castEventResult;
 
-  constructor(logger) {
+  constructor(logger, anchorOptions) {
     this.#logger = logger;
 
-    const rpcEndpoint = process.env.ANCHOR_PROVIDER_URL;
-    const connection = new anchor.web3.Connection(rpcEndpoint, 'finalized');
+
+    const connection = new anchor.web3.Connection(anchorOptions.providerUrl, 'finalized');
 
     const wallet = anchor.Wallet.local();
     const provider = new anchor.AnchorProvider(connection, wallet, {
-      preflightCommitment: 'finalized',
-      commitment: 'finalized',
+      preflightCommitment: anchorOptions.commitmentLevel || 'finalized',
+      commitment: anchorOptions.commitmentLevel || 'finalized',
     });
 
     anchor.setProvider(provider);
@@ -95,7 +95,7 @@ export class PresaleContractAdapter {
         const parsedEvents = this.#parser.parseLogs(tx.meta.logMessages);
 
         for (const event of parsedEvents) {
-          if (event.name === 'ParticipateEvent') {
+          if (event.name === 'participateEvent') {
             event.data.lastProcessedSlot = sigInfo.slot;
             batch.push(this.#castParticipateEvent(event.data));
             count++;

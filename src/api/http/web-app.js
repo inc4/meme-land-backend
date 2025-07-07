@@ -29,7 +29,9 @@ const logger = new WinstonLoggerAdapter(winston, config.logger);
 
 mongoose.connect(config.mongo.url, config.mongo.options);
 
-const presaleContractAdapter = new PresaleContractAdapter(logger);
+
+
+const presaleContractAdapter = new PresaleContractAdapter(logger, config.anchorOptions);
 const walletService = new WalletService(
   walletModel,
   presaleContractAdapter,

@@ -6,6 +6,12 @@ const env = process.env;
 
 const config = {};
 
+// anchor
+config.anchorOptions = {
+  commitmentLevel: env.ANCHOR_COMMITMENT_LEVEL,
+  providerUrl: env.ANCHOR_PROVIDER_URL,
+}
+
 
 // presale default settings
 config.presaleDefaults = {

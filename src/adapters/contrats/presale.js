@@ -75,8 +75,7 @@ export class PresaleContractAdapter {
       });
 
       if (!signatures.length) break;
-      391823224
-      391826946
+
       for (const sigInfo of signatures) {
         if (sigInfo.slot < startSlot) {
           if (batch.length) await callback(batch);

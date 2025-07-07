@@ -38,8 +38,8 @@ export class PresaleContractAdapter {
 
     const wallet = anchor.Wallet.local();
     const provider = new anchor.AnchorProvider(connection, wallet, {
-      preflightCommitment: this.#anchorOptions.commitmentLevel || 'finalized',
-      commitment: this.#anchorOptions.commitmentLevel || 'finalized',
+      preflightCommitment: this.#anchorOptions.commitmentLevel,
+      commitment: this.#anchorOptions.commitmentLevel,
     });
 
     anchor.setProvider(provider);
@@ -89,7 +89,6 @@ export class PresaleContractAdapter {
         const tx = await connection.getParsedTransaction(sigInfo.signature, {
           commitment: this.#anchorOptions.commitmentLevel,
         });
-        console.log('🚀 - PresaleContractAdapter - recoverParticipationFromSignatures - tx:', tx)
 
         if (!tx?.meta?.logMessages) continue;
 
@@ -419,7 +418,7 @@ export class PresaleContractAdapter {
         }
 
       },
-      "finalized"
+      this.#anchorOptions.commitmentLevel
     );
   }
 

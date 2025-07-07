@@ -27,18 +27,19 @@ export class PresaleContractAdapter {
   #parser;
   #vrf;
   #eventHandlers;
+  #anchorOptions;
   #castEventResult;
 
   constructor(logger, anchorOptions) {
     this.#logger = logger;
+    this.#anchorOptions = anchorOptions
 
-
-    const connection = new anchor.web3.Connection(anchorOptions.providerUrl, 'finalized');
+    const connection = new anchor.web3.Connection(anchorOptions.providerUrl, this.#anchorOptions.commitmentLevel);
 
     const wallet = anchor.Wallet.local();
     const provider = new anchor.AnchorProvider(connection, wallet, {
-      preflightCommitment: anchorOptions.commitmentLevel || 'finalized',
-      commitment: anchorOptions.commitmentLevel || 'finalized',
+      preflightCommitment: this.#anchorOptions.commitmentLevel || 'finalized',
+      commitment: this.#anchorOptions.commitmentLevel || 'finalized',
     });
 
     anchor.setProvider(provider);
@@ -71,7 +72,7 @@ export class PresaleContractAdapter {
       const signatures = await connection.getSignaturesForAddress(this.#program.programId, {
         limit: SLOT_BATCH_SIZE,
         before,
-        commitment: 'finalized'
+        commitment: this.#anchorOptions.commitmentLevel
       });
 
       if (!signatures.length) break;
@@ -86,7 +87,7 @@ export class PresaleContractAdapter {
         await new Promise((res) => setTimeout(res, DELAY_MS)); // ⏳ rate limit
 
         const tx = await connection.getParsedTransaction(sigInfo.signature, {
-          commitment: 'finalized',
+          commitment: this.#anchorOptions.commitmentLevel,
         });
         console.log('🚀 - PresaleContractAdapter - recoverParticipationFromSignatures - tx:', tx)
 

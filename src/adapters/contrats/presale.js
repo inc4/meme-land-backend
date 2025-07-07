@@ -17,6 +17,8 @@ const TOKEN_METADATA_PROGRAM_ID = new anchor.web3.PublicKey(
 const SOL_DECIMALS = 9;
 const RPC_CALL_RETRY = 5;
 const RPC_CALL_MIN_INTERVAL = 1000;
+const SLOT_BATCH_SIZE = 100;
+const PARTICIPATION_BATCH_SIZE = 500;
 
 export class PresaleContractAdapter {
   #logger;
@@ -25,25 +27,106 @@ export class PresaleContractAdapter {
   #parser;
   #vrf;
   #eventHandlers;
+  #anchorOptions;
   #castEventResult;
 
-  constructor(logger) {
+  constructor(logger, anchorOptions) {
     this.#logger = logger;
-    const provider = anchor.AnchorProvider.env();
+    this.#anchorOptions = anchorOptions
+
+    const connection = new anchor.web3.Connection(anchorOptions.providerUrl, this.#anchorOptions.commitmentLevel);
+
+    const wallet = anchor.Wallet.local();
+    const provider = new anchor.AnchorProvider(connection, wallet, {
+      preflightCommitment: this.#anchorOptions.commitmentLevel,
+      commitment: this.#anchorOptions.commitmentLevel,
+    });
+
     anchor.setProvider(provider);
+
     this.#payer = provider.wallet.payer;
     this.#program = new anchor.Program(idl, provider);
     this.#parser = new anchor.EventParser(this.#program.programId, this.#program.coder);
     this.#vrf = new Orao(provider);
-    this.#eventHandlers = {};// map of event name to handlers array
+    this.#eventHandlers = {};
     this.#castEventResult = {
       calculateDistributionEvent: this.#castCalculateDistributionEvent.bind(this),
       participateEvent: this.#castParticipateEvent.bind(this),
       setStatusEvent: this.#castSetStatusEvent.bind(this),
     };
+
     this.#handleEvents();
   }
 
+
+  async waitForNextSlot() {
+    const current = await this.#program.provider.connection.getSlot(this.#anchorOptions.commitmentLevel);
+
+    while (true) {
+      const next = await this.#program.provider.connection.getSlot(this.#anchorOptions.commitmentLevel);
+
+      if (next > current + this.#anchorOptions.logsOffset) {
+        return next;
+      }
+      await new Promise(resolve => setTimeout(resolve, 100));
+    }
+  }
+
+  async recoverParticipationFromSignatures(startSlot, callback) {
+    await this.waitForNextSlot();
+
+    const requestDelay = 1000 / this.#anchorOptions.rateLimit;
+
+    let before = undefined;
+    let count = 0;
+    let batch = [];
+
+    while (true) {
+      const signatures = await this.#program.provider.connection.getSignaturesForAddress(this.#program.programId, {
+        limit: SLOT_BATCH_SIZE,
+        before,
+        commitment: this.#anchorOptions.commitmentLevel
+      });
+
+      if (!signatures.length) break;
+
+      for (const sigInfo of signatures) {
+        if (startSlot && sigInfo.slot < startSlot) {
+          if (batch.length) await callback(batch);
+          this.#logger.info(`Replayed total ${count} participation events`);
+          return;
+        }
+
+        await new Promise((res) => setTimeout(res, requestDelay)); // rate limit
+
+        const tx = await this.#program.provider.connection.getParsedTransaction(sigInfo.signature, {
+          commitment: this.#anchorOptions.commitmentLevel,
+        });
+
+        if (!tx?.meta?.logMessages) continue;
+
+        const parsedEvents = this.#parser.parseLogs(tx.meta.logMessages);
+
+        for (const event of parsedEvents) {
+          if (event.name === 'participateEvent') {
+            event.data.lastProcessedSlot = sigInfo.slot;
+            batch.push(this.#castParticipateEvent(event.data));
+            count++;
+
+            if (batch.length >= PARTICIPATION_BATCH_SIZE) {
+              await callback(batch);
+              batch = [];
+            }
+          }
+        }
+      }
+
+      before = signatures[signatures.length - 1].signature;
+    }
+    if (batch.length) await callback(batch);
+
+    this.#logger.info(`Replayed total ${count} participation events`);
+  }
 
   get payer() {
     return this.#payer;
@@ -341,6 +424,7 @@ export class PresaleContractAdapter {
         for (const event of this.#parser.parseLogs(logs.logs)) {
           if (this.#eventHandlers[event.name]) {
             this.#eventHandlers[event.name].forEach((callback) => {
+              event.data.lastProcessedSlot = ctx.slot
               callback(
                 this.#castEventResult[event.name](event.data)
               );
@@ -349,7 +433,7 @@ export class PresaleContractAdapter {
         }
 
       },
-      "finalized"
+      this.#anchorOptions.commitmentLevel
     );
   }
 
@@ -361,7 +445,8 @@ export class PresaleContractAdapter {
       tokenAmount: new Decimal(event.tokenAmount.toString()).div('1e9'),
       mintAccount: event.mintAccount.toBase58(),
       participationAccount: event.participantPubkey.toBase58(),
-      campaign: event.campaign.toBase58()
+      campaign: event.campaign.toBase58(),
+      lastProcessedSlot: event.lastProcessedSlot
     };
   }
 

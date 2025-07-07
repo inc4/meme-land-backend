@@ -2,7 +2,7 @@ import * as anchor from "@coral-xyz/anchor";
 import Decimal from 'decimal.js';
 import { BN } from "bn.js";
 import { sha256 } from "js-sha256";
-import { PublicKey, Connection } from "@solana/web3.js";
+import { PublicKey } from "@solana/web3.js";
 import retry from 'async-retry';
 import { TOKEN_PROGRAM_ID, ASSOCIATED_TOKEN_PROGRAM_ID, getAssociatedTokenAddress } from "@solana/spl-token";
 import { networkStateAccountAddress, Orao, randomnessAccountAddress } from "@orao-network/solana-vrf";
@@ -17,7 +17,7 @@ const TOKEN_METADATA_PROGRAM_ID = new anchor.web3.PublicKey(
 const SOL_DECIMALS = 9;
 const RPC_CALL_RETRY = 5;
 const RPC_CALL_MIN_INTERVAL = 1000;
-const SLOT_BATCH_SIZE = 1000;
+const SLOT_BATCH_SIZE = 100;
 const PARTICIPATION_BATCH_SIZE = 500;
 
 export class PresaleContractAdapter {
@@ -46,55 +46,67 @@ export class PresaleContractAdapter {
     this.#handleEvents();
   }
 
-  async recoverParticipationFromHistory(startSlot, callback) {
-    const connection = new Connection(this.#program.provider.connection._rpcEndpoint, 'finalized')
-    const endSlot = await connection.getSlot('finalized');
+  async recoverParticipationFromSignatures(startSlot = 392452685, callback) {
+    const connection = new anchor.web3.Connection(
+      this.#program.provider.connection._rpcEndpoint,
+      'confirmed'
+    );
 
+    const RATE_LIMIT = 10; // max requests per second
+    const DELAY_MS = 1000 / RATE_LIMIT;
+
+    let before = undefined;
     let count = 0;
     let batch = [];
 
-    for (let currentStart = startSlot; currentStart <= endSlot; currentStart += SLOT_BATCH_SIZE) {
-      const currentEnd = Math.min(currentStart + SLOT_BATCH_SIZE - 1, endSlot);
+    while (true) {
+      const signatures = await connection.getSignaturesForAddress(this.#program.programId, {
+        limit: SLOT_BATCH_SIZE,
+        before,
+      });
 
-      try {
-        const logs = await connection.getLogs(
-          this.#program.programId,
-          currentStart,
-          currentEnd,
-          { commitment: 'finalized' }
-        );
+      if (!signatures.length) break;
 
-        for (const logEntry of logs) {
-          const parsed = this.#parser.parseLogs(logEntry.logs);
-          for (const event of parsed) {
-            if (event.name === 'ParticipateEvent') {
-              event.data.lastProcessedSlot = logEntry.slot;
-              batch.push(event.data);
-              count++;
+      for (const sigInfo of signatures) {
+        if (sigInfo.slot < startSlot) {
+          if (batch.length) await callback(batch);
+          this.#logger.info(`Replayed total ${count} participation events`);
+          return;
+        }
 
-              if (batch.length >= PARTICIPATION_BATCH_SIZE) {
-                await callback(batch);
-                batch = [];
-              }
+        await new Promise((res) => setTimeout(res, DELAY_MS));
 
-              if (batch.length > 0) {
-                await callback(batch);
-              }
+        const tx = await connection.getTransaction(sigInfo.signature, {
+          commitment: 'confirmed',
+        });
+
+        if (!tx?.meta?.logMessages) continue;
+
+        const parsedEvents = this.#parser.parseLogs(tx.meta.logMessages);
+
+        for (const event of parsedEvents) {
+          if (event.name === 'ParticipateEvent') {
+            event.data.lastProcessedSlot = sigInfo.slot;
+            batch.push(this.#castParticipateEvent(event.data));
+            count++;
+
+            if (batch.length >= PARTICIPATION_BATCH_SIZE) {
+              await callback(batch);
+              batch = [];
             }
           }
         }
-
-        this.#logger.debug(`Processed logs from ${currentStart} to ${currentEnd}`);
-      } catch (err) {
-        this.#logger.warn(`Failed to fetch logs from ${currentStart} to ${currentEnd}:`, err.message);
       }
+
+      before = signatures[signatures.length - 1].signature;
     }
 
+    if (batch.length) {
+      await callback(batch);
+    }
 
     this.#logger.info(`Replayed total ${count} participation events`);
   }
-
-
 
   get payer() {
     return this.#payer;

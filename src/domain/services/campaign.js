@@ -33,9 +33,7 @@ export class CampaignService {
     // Wait while timers set after server was down
     await this.#waitUntilExistedCampaignProcessed();
 
-    const currentTs = Date.now();
-
-    if (!CampaignService.#isValid(data, currentTs)) {
+    if (!CampaignService.#isValid(data, Date.now())) {
       this.#logger.debug('Invalid campaign input ts: ', data);
       return null;
     }
@@ -61,7 +59,7 @@ export class CampaignService {
 
     this.#logger.info('Campaign created: ', { campaignId: campaign.campaignId });
 
-    this.#scheduleCampaignEvents(campaign, currentTs);
+    this.#scheduleCampaignEvents(campaign);
 
     return campaign;
   }
@@ -73,8 +71,6 @@ export class CampaignService {
   }
 
   async #setExistedCampaignsTimers() {
-    const currentTs = Date.now();
-
     const conditions = { currentStatus: { $ne: 'distributionFinished' } };
     const pageQuery = {
       page: 1, // paginate use 1 as first page
@@ -86,7 +82,7 @@ export class CampaignService {
     while (hasNextPage) {
       const campaignPage = await this.#dataModel.paginate(conditions, pageQuery);
       campaignPage.docs.forEach((campaign) => {
-        this.#scheduleCampaignEvents(campaign, currentTs);
+        this.#scheduleCampaignEvents(campaign);
       });
 
       hasNextPage = campaignPage.hasNextPage;
@@ -95,7 +91,8 @@ export class CampaignService {
     this.#isExistedCampaignsProcessed = true;
   }
 
-  #scheduleCampaignEvents(campaignData, currentTs) {
+  #scheduleCampaignEvents(campaignData) {
+    const currentTs = Date.now();
     Object.keys(this.#statusDate).forEach((status) => {
       this.#scheduleSetStatus(campaignData, status, currentTs);
     });

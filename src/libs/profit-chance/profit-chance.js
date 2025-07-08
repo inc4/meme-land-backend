@@ -1,3 +1,5 @@
+import Decimal from "decimal.js";
+
 export class ProfitChance {
 
   static calculate({
@@ -8,47 +10,59 @@ export class ProfitChance {
     listingMultiplier,  // Price multiplier for listing (L)
     buybackPrice        // Price at which the buyback bot buys tokens (P_BB)
   }) {
+    // Convert all inputs to Decimal for precision
+    const totalToken = new Decimal(totalTokenSupply);
+    const fLP = new Decimal(lpUsdFraction);
+    const fBB = new Decimal(buybackFraction);
+    const PP = new Decimal(presalePrice);
+    const L = new Decimal(listingMultiplier);
+    const PBB = new Decimal(buybackPrice);
+
     // Fraction of tokens sold in presale
-    const presaleFraction = listingMultiplier / (listingMultiplier + lpUsdFraction);
+    const fRaise = L.div(L.plus(fLP));
 
     // Tokens sold in presale
-    const tokensSoldInPresale = totalTokenSupply * presaleFraction;
+    const tokensSoldInPresale = totalToken.mul(fRaise);
 
     // USD raised from presale
-    const usdRaised = tokensSoldInPresale * presalePrice;
+    const usdRaised = tokensSoldInPresale.mul(PP);
 
     // Tokens added to LP
-    const tokensInLp = totalTokenSupply * (1 - presaleFraction);
+    const tokensInLp = totalToken.mul(Decimal.sub(1, fRaise));
 
     // USD in LP (using listing price)
-    const usdInLp = tokensInLp * presalePrice * listingMultiplier;
+    const usdInLp = tokensInLp.mul(PP).mul(L);
 
     // Max tokens users can sell before price drops to presale level
-    const maxTokensBeforePriceDrop = Math.sqrt((tokensInLp * usdInLp) / presalePrice) - tokensInLp;
+    const maxTokensBeforePriceDrop = tokensInLp
+      .mul(usdInLp)
+      .div(PP)
+      .sqrt()
+      .minus(tokensInLp);
 
     // USD available for buyback
-    const buybackUsd = usdRaised * buybackFraction;
+    const buybackUsd = usdRaised.mul(fBB);
 
     // Tokens the buyback bot can repurchase at the specified buyback price
-    const tokensBoughtByBuyback = buybackUsd / buybackPrice;
+    const tokensBoughtByBuyback = buybackUsd.div(PBB);
 
     // Total tokens users can sell without causing loss
-    const totalProfitableTokens = maxTokensBeforePriceDrop + tokensBoughtByBuyback;
+    const totalProfitableTokens = maxTokensBeforePriceDrop.plus(tokensBoughtByBuyback);
 
     // Share of presale users who can sell at break-even or profit
-    const profitableUserShare = totalProfitableTokens / tokensSoldInPresale;
+    const profitableUserShare = totalProfitableTokens.div(tokensSoldInPresale);
 
     return {
-      presaleFraction,
-      tokensSoldInPresale,
-      usdRaised,
-      tokensInLp,
-      usdInLp,
-      maxTokensBeforePriceDrop,
-      buybackUsd,
-      tokensBoughtByBuyback,
-      totalProfitableTokens,
-      profitableUserShare
+      presaleFraction: fRaise.toNumber(),
+      tokensSoldInPresale: tokensSoldInPresale.toNumber(),
+      usdRaised: usdRaised.toNumber(),
+      tokensInLp: tokensInLp.toNumber(),
+      usdInLp: usdInLp.toNumber(),
+      maxTokensBeforePriceDrop: maxTokensBeforePriceDrop.toNumber(),
+      buybackUsd: buybackUsd.toNumber(),
+      tokensBoughtByBuyback: tokensBoughtByBuyback.toNumber(),
+      totalProfitableTokens: totalProfitableTokens.toNumber(),
+      profitableUserShare: profitableUserShare.toNumber()
     };
   }
 }

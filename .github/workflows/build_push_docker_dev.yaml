@@ -73,8 +73,8 @@ jobs:
       - name: Update config files
         run: |
           echo "Updating config files on server..."
-          echo "${{ secrets.env }}" > secrets.env
-          echo "${{ secrets.id }}" > id.json
+          echo "${{ secrets.env_dev }}" > secrets.env
+          echo "${{ secrets.id_dev }}" > id.json
           echo "${{ vars.idl_dev }}" > idl.json
           ssh-keyscan -H ${{ env.IP_ADDR }} >> ~/.ssh/known_hosts
           scp -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa secrets.env ec2-user@${{ env.IP_ADDR }}:/home/ec2-user/secrets/.env

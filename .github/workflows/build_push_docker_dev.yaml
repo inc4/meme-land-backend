@@ -75,11 +75,10 @@ jobs:
           echo "Updating config files on server..."
           echo "${{ secrets.env_dev }}" > secrets.env
           echo "${{ secrets.id_dev }}" > id.json
-          echo "${{ vars.idl_dev }}" > idl.json
           ssh-keyscan -H ${{ env.IP_ADDR }} >> ~/.ssh/known_hosts
           scp -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa secrets.env ec2-user@${{ env.IP_ADDR }}:/home/ec2-user/secrets/.env
           scp -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa id.json ec2-user@${{ env.IP_ADDR }}:/home/ec2-user/secrets/id.json
-          scp -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa idl.json ec2-user@${{ env.IP_ADDR }}:/home/ec2-user/idl.json
+          scp -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa ./idl/idl.dev.json ec2-user@${{ env.IP_ADDR }}:/home/ec2-user/idl.json
 
       - name: Update server with new image
         run: |

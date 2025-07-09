@@ -7,7 +7,7 @@ import retry from 'async-retry';
 import { TOKEN_PROGRAM_ID, ASSOCIATED_TOKEN_PROGRAM_ID, getAssociatedTokenAddress } from "@solana/spl-token";
 import { networkStateAccountAddress, Orao, randomnessAccountAddress } from "@orao-network/solana-vrf";
 
-import idl from "./idl.json" assert { type: 'json' };
+import idl from "./idl.json" with { type: 'json' };
 
 // Token Metadata Program ID
 const TOKEN_METADATA_PROGRAM_ID = new anchor.web3.PublicKey(

@@ -1,0 +1,104 @@
+name: Release and deploy
+
+on:
+  release:
+    types: published
+  workflow_dispatch:
+
+env:
+  AWS_REGION: eu-central-1
+  ECR_REGISTRY: 043459177569.dkr.ecr.eu-central-1.amazonaws.com
+  ECR_REPOSITORY: meme-land-backend
+  IP_ADDR: "3.124.169.88"
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - uses: docker/login-action@v1
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+      
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v1
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v2
+        
+      - name: Set up docker buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Docker meta
+        id: meta
+        uses: docker/metadata-action@v4
+        with:
+          images: |
+            ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}
+          tags: |
+            type=ref,event=tag
+        
+      - name: Docker build
+        uses: docker/build-push-action@v4
+        with:
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          platforms: linux/amd64,linux/arm64
+
+  update-on-server:
+    runs-on: ubuntu-latest
+    needs: build-and-push
+
+    steps:
+      - name: Add ssh key
+        run: |
+          install -m 600 -D /dev/null ~/.ssh/id_rsa
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+
+      - name: Update config files
+        run: |
+          echo "Updating config files on server..."
+          echo "${{ secrets.env_prod }}" > secrets.env
+          echo "${{ secrets.id_prod }}" > id.json
+          echo "${{ secrets.idl_prod }}" > idl.json
+          ssh-keyscan -H ${{ env.IP_ADDR }} >> ~/.ssh/known_hosts
+          scp -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa secrets.env ec2-user@${{ env.IP_ADDR }}:/home/ec2-user/secrets/.env
+          scp -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa id.json ec2-user@${{ env.IP_ADDR }}:/home/ec2-user/secrets/id.json
+          scp -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa idl.json ec2-user@${{ env.IP_ADDR }}:/home/ec2-user/idl.json
+
+      - name: Update server with new image
+        run: |
+          echo "Updating server with new Docker image..."
+
+          ssh-keyscan -H ${{ env.IP_ADDR }} >> ~/.ssh/known_hosts
+          ssh ec2-user@${{ env.IP_ADDR }} -i ~/.ssh/id_rsa "aws ecr get-login-password --region eu-central-1 | docker login --username AWS --password-stdin ${{ env.ECR_REGISTRY }}"
+          ssh ec2-user@${{ env.IP_ADDR }} -i ~/.ssh/id_rsa "docker pull ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:${{ github.ref_name }}"
+
+          ssh ec2-user@${{ env.IP_ADDR }} -i ~/.ssh/id_rsa "docker-compose down backend && docker-compose up -d backend"
+
+          # Health check
+          for i in {1..10}; do
+            sleep 10
+            status=$(ssh ec2-user@${{ env.IP_ADDR }} -i ~/.ssh/id_rsa "curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8877/health")
+            if [ "$status" -eq 200 ]; then
+              echo "Backend is up and running!"
+              exit 0
+            else
+              echo "Waiting for backend to be ready... (attempt $i)"
+            fi
+          done
+          echo "Backend did not start successfully after 10 attempts."
+          exit 1

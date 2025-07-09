@@ -4,8 +4,6 @@ on:
   push:
     branches:
       - main
-  release:
-    types: [published]
   workflow_dispatch:
 
 env:
@@ -77,9 +75,11 @@ jobs:
           echo "Updating config files on server..."
           echo "${{ secrets.env }}" > secrets.env
           echo "${{ secrets.id }}" > id.json
+          echo "${{ secrets.idl_dev }}" > idl.json
           ssh-keyscan -H ${{ env.IP_ADDR }} >> ~/.ssh/known_hosts
           scp -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa secrets.env ec2-user@${{ env.IP_ADDR }}:/home/ec2-user/secrets/.env
           scp -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa id.json ec2-user@${{ env.IP_ADDR }}:/home/ec2-user/secrets/id.json
+          scp -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa idl.json ec2-user@${{ env.IP_ADDR }}:/home/ec2-user/idl.json
 
       - name: Update server with new image
         run: |

@@ -2,6 +2,12 @@
  * @openapi
  * components:
  *   schemas:
+ *     ProfitChance:
+ *       type: object
+ *       properties:
+ *         profitChance:
+ *           type: string
+ *           example: "31.94"
  *     CampaignInput:
  *       type: object
  *       required:
@@ -257,6 +263,7 @@ export class CampaignController {
   }
 
   registerRoutes(router) {
+    router.get('/campaigns/profit-chance', this.getProfitChance.bind(this));
     router.post('/campaigns', this.addCampaign.bind(this));
     router.get('/campaigns/:campaignId', this.getSingleByCampaignId.bind(this));
     router.get('/campaigns', this.get.bind(this));
@@ -396,6 +403,45 @@ export class CampaignController {
         Number(req.query.limit)
       );
       return res.status(200).send(dataPage);
+    } catch (err) {
+      res.status(500).send(this.#composeError(500, err.message));
+      return next(err);
+    }
+  }
+
+  /**
+     * @openapi
+     * /campaigns/profit-chance:
+     *   get:
+     *     summary: get calculated profit chance
+     *     parameters:
+     *      - name: conditions
+     *        in: query
+     *        description: stringified and encoded query conditions, according to Campaign schema, encodeURIComponent(JSON.stringify(conditions).
+     *        example: { tokenSupply: 1000, fundsToLP: 75, buybackReserve: 15, presalePrice: 1, listingMultiplier: 3, priceLevelSupport: 1.1 }
+     *        schema:
+     *         type: string
+     *     responses:
+     *       200:
+     *         description: Specified by conditions, calculated profit chance
+     *         content:
+     *          application/json:
+     *            schema:
+     *              $ref: "#/components/schemas/ProfitChance"  
+     *       401:
+     *         $ref: "#/components/responses/Unauthorized"
+     *       500:
+     *         $ref: "#/components/responses/InternalServerError"
+     */
+  async getProfitChance(req, res, next) {
+    try {
+      if (!req.auth.isAdmin) {
+        return res.status(401).send(this.#composeError(401, 'Unauthorized'));
+      }
+      const profitChance = await this.#campaignService.calculateProfitChance(
+        this.#parseConditions(req.query.conditions)
+      );
+      return res.status(200).send({ profitChance });
     } catch (err) {
       res.status(500).send(this.#composeError(500, err.message));
       return next(err);

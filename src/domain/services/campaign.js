@@ -1,6 +1,7 @@
 
 // TODO: когда будет создаваться компания, продумать вопрос измения статусов в бд. делаем интервал день
 import { v4 as uuidv4 } from 'uuid';
+import { ProfitChance } from '../../libs/profit-chance/index.js';
 
 export class CampaignService {
   #dataModel;
@@ -66,6 +67,19 @@ export class CampaignService {
     this.#scheduleCampaignEvents(campaign, currentTs);
 
     return campaign;
+  }
+
+  calculateProfitChance(data) {
+    data.tokenSupply = data.tokenSupply ?? this.#settings.tokenSupply;
+    const result = ProfitChance.calculate({
+      totalTokenSupply: data.tokenSupply,
+      lpUsdFraction: data.fundsToLP / 100,
+      buybackFraction: data.buybackReserve / 100,
+      presalePrice: data.presalePrice,
+      listingMultiplier: data.listingMultiplier,
+      buybackPrice: data.priceLevelSupport,
+    });
+    return (result.profitableUserShare * 100).toFixed(2);
   }
 
   async #waitUntilExistedCampaignProcessed(intervalMs = 100) {
@@ -192,6 +206,7 @@ export class CampaignService {
       + (data.amountOfWallet - 1) * data.tokenUnlockInterval
       + this.#settings.claimTokenMinInterval
     );
+    data.profitChance = data.profitChance ?? this.calculateProfitChance(data);
   }
 
   // get date timestamp

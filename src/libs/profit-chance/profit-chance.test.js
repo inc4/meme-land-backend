@@ -1,6 +1,7 @@
 import { ProfitChance } from './profit-chance.js'
 
-
+// { tokenSupply: 1000000000, fundsToLP: '10', buybackReserve: '10', presalePrice: '0.002', listingMultiplier: '10.4', priceLevelSupport: '0.06'}
+// { tokenSupply: 1000, fundsToLP: '75', buybackReserve: '15', presalePrice: 1, listingMultiplier: 3, priceLevelSupport: 1.1 }
 const presaleSettings = {
   totalTokenSupply: 1000,
   lpUsdFraction: 0.75,

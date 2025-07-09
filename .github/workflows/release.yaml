@@ -73,7 +73,7 @@ jobs:
           echo "Updating config files on server..."
           echo "${{ secrets.env_prod }}" > secrets.env
           echo "${{ secrets.id_prod }}" > id.json
-          echo "${{ secrets.idl_prod }}" > idl.json
+          echo "${{ vars.idl_prod }}" > idl.json
           ssh-keyscan -H ${{ env.IP_ADDR }} >> ~/.ssh/known_hosts
           scp -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa secrets.env ec2-user@${{ env.IP_ADDR }}:/home/ec2-user/secrets/.env
           scp -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa id.json ec2-user@${{ env.IP_ADDR }}:/home/ec2-user/secrets/id.json

@@ -50,6 +50,7 @@ jobs:
             ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}
           tags: |
             type=ref,event=tag
+            type=raw,value=latest
         
       - name: Docker build
         uses: docker/build-push-action@v4

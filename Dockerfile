@@ -16,4 +16,4 @@ COPY . .
 EXPOSE 8877
 
 # Command to run the app
-CMD ["npm", "run", "api-server"]
+CMD ["npm", "run", "register-admin", "&&", "npm", "run", "api-server"]

@@ -182,7 +182,7 @@ export class CampaignService {
   async #handleSetStatusEvent(eventData) {
     this.#logger.info('SetStatus event: ', eventData);
     await this.#dataModel.updateOne(
-      { tokenName: eventData.tokenName, eventData: eventData.tokenSymbol },
+      { tokenName: eventData.tokenName, tokenSymbol: eventData.tokenSymbol },
       { currentStatus: eventData.status }
     );
   }

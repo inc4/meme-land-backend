@@ -1,5 +1,5 @@
 {
-  "address": "ApWd2yinkjm7hXUAadnqYtc8P4ARYmc8xUccsk17pfLY",
+  "address": "5G929BczfBxw7krMcoECeAEYpTUXVanXC4SinDWTcXrA",
   "metadata": {
     "name": "mem_land",
     "version": "0.1.0",
@@ -2357,11 +2357,6 @@
       "code": 6000,
       "name": "UnauthorizedAccess",
       "msg": "Unauthorized access - Insufficient role privileges"
-    },
-    {
-      "code": 6001,
-      "name": "CannotRevokeOwnRole",
-      "msg": "Cannot revoke your own role"
     }
   ],
   "types": [

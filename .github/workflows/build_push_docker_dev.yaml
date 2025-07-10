@@ -92,6 +92,7 @@ jobs:
           ssh ec2-user@${{ env.IP_ADDR }} -i ~/.ssh/id_rsa "docker pull ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:${{ github.ref_name }}"
 
           ssh ec2-user@${{ env.IP_ADDR }} -i ~/.ssh/id_rsa "docker-compose down backend && docker-compose up -d backend"
+          ssh ec2-user@${{ env.IP_ADDR }} -i ~/.ssh/id_rsa "docker exec backend npm run register-admin"
 
           # Health check
           for i in {1..10}; do

@@ -11,34 +11,52 @@ import config from '../../../config/index.js';
 
 
 async function main() {
+  await mongoose.connect(config.mongo.url, config.mongo.options);
+  const logger = new WinstonLoggerAdapter(winston, config.logger);
+  const presaleContractAdapter = new PresaleContractAdapter(logger, config.anchorOptions, false);
+  const walletService = new WalletService(
+    walletModel,
+    presaleContractAdapter,
+    DataPageComposer.composePageInfo,
+    logger
+  );
+
   try {
+
+    // Register admins
     const adminWalletList = process.env.ADMIN_WALLET;
-
-    if (!adminWalletList) {
-      throw Error('No admin wallets specified');
-    }
-
-    await mongoose.connect(config.mongo.url, config.mongo.options);
-    const logger = new WinstonLoggerAdapter(winston, config.logger);
-    const presaleContractAdapter = new PresaleContractAdapter(logger, config.anchorOptions, false);
-    const walletService = new WalletService(
-      walletModel,
-      presaleContractAdapter,
-      DataPageComposer.composePageInfo,
-      logger
-    );
-
-    const wallets = adminWalletList.split(' ');
-
-    for (const wallet of wallets) {
-      let walletInfo = await walletService.getSingle(wallet);
-      if (!walletInfo) {
-        walletInfo = await walletService.addSingle({ referrer: wallet, wallet: wallet, isAdmin: true });
-        logger.info('Admin wallet successfully registered: ', walletInfo);
-      } else {
-        logger.info('Admin wallet previously existed: ', walletInfo);
+    if (adminWalletList) {
+      const adminWallets = adminWalletList.split(' ');
+      for (const wallet of adminWallets) {
+        let walletInfo = await walletService.getSingle(wallet);
+        if (!walletInfo) {
+          walletInfo = await walletService.addSingle({ referrer: wallet, wallet: wallet, isAdmin: true });
+          logger.info('Admin wallet successfully registered: ', walletInfo);
+        } else {
+          logger.info('Admin wallet previously existed: ', walletInfo);
+        }
       }
+    } else {
+      logger.warn('No admin wallets specified');
     }
+
+    // Register guest users
+    const guestUsersList = process.env.GUEST_USERS_WALLET;
+    if (guestUsersList) {
+      const guestWallets = guestUsersList.split(' ');
+      for (const wallet of guestWallets) {
+        let walletInfo = await walletService.getSingle(wallet);
+        if (!walletInfo) {
+          walletInfo = await walletService.addSingle({ referrer: wallet, wallet: wallet, isAdmin: false });
+          logger.info('Guest wallet successfully registered: ', walletInfo);
+        } else {
+          logger.info('Guest wallet previously existed: ', walletInfo);
+        }
+      }
+    } else {
+      logger.warn('No guest wallets specified');
+    }
+
   } catch (err) {
     logger.error('Admin wallet registration error: ', err);
   }

@@ -10,6 +10,10 @@ import config from '../../../config/index.js';
 
 
 
+function toWalletSaveView(wallet) {
+  return wallet.substring(0, 4);
+}
+
 async function main() {
   await mongoose.connect(config.mongo.url, config.mongo.options);
   const logger = new WinstonLoggerAdapter(winston, config.logger);
@@ -31,9 +35,9 @@ async function main() {
         let walletInfo = await walletService.getSingle(wallet);
         if (!walletInfo) {
           walletInfo = await walletService.addSingle({ referrer: wallet, wallet: wallet, isAdmin: true });
-          logger.info('Admin wallet successfully registered: ', walletInfo);
+          logger.info('Admin wallet successfully registered: ', { wallet: `${toWalletSaveView(wallet)}...` });
         } else {
-          logger.info('Admin wallet previously existed: ', walletInfo);
+          logger.info('Admin wallet previously existed: ', { wallet: `${toWalletSaveView(wallet)}...` });
         }
       }
     } else {
@@ -48,9 +52,9 @@ async function main() {
         let walletInfo = await walletService.getSingle(wallet);
         if (!walletInfo) {
           walletInfo = await walletService.addSingle({ referrer: wallet, wallet: wallet, isAdmin: false });
-          logger.info('Guest wallet successfully registered: ', walletInfo);
+          logger.info('Guest wallet successfully registered: ', { wallet: `${toWalletSaveView(wallet)}...` });
         } else {
-          logger.info('Guest wallet previously existed: ', walletInfo);
+          logger.info('Guest wallet previously existed: ', { wallet: `${toWalletSaveView(wallet)}...` });
         }
       }
     } else {

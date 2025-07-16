@@ -17,7 +17,13 @@ export class WalletService {
     await this.#presaleContract.addUser(data.wallet);
     data.inviteCode = uuidv4();
     const userData = await this.#dataModel.create(data);
-    this.#logger.debug('User created: ', userData);
+
+    this.#logger.debug('User created: ', {
+      referrer: this.#stringToSaveView(userData.referrer),
+      wallet: this.#stringToSaveView(userData.wallet),
+      isAdmin: userData.isAdmin,
+      createdAt: userData.createdAt
+    });
     return userData;
   }
 
@@ -45,4 +51,7 @@ export class WalletService {
     return (!!(resp && resp.modifiedCount)) ? { inviteCode } : null;
   }
 
+  #stringToSaveView(string) {
+    return string.substring(0, 4);
+  }
 }

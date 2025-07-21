@@ -133,6 +133,39 @@ export class PresaleContractAdapter {
   }
 
 
+  async #safeContractCallWithRetry(fn, options) {
+    return retry(async (bail, attempt) => {
+      try {
+        return await fn(bail, attempt);
+      } catch (err) {
+        const isTimeout = typeof err?.message === 'string' && err.message.includes('Transaction was not confirmed in');
+        const signature = err?.signature;
+
+        if (!isTimeout || !signature) throw err;
+
+        this.#logger.warn(`Timeout on attempt ${attempt}, tx=${signature}. Verifying manually...`);
+
+        await retry(async (bailTx, txAttempt) => {
+          const confirmedTx = await this.#program.provider.connection.getParsedTransaction(signature, {
+            commitment: this.#anchorOptions.commitmentLevel,
+          });
+
+          if (!confirmedTx) {
+            this.#logger.warn(`Verifying manually [${txAttempt}/${txRetryAttempts}] retries. Transaction not yet confirmed...`);
+            throw new Error('Transaction not yet found');
+          }
+
+          if (confirmedTx.meta && confirmedTx.meta.err) {
+            this.#logger.warn(`Transaction ${signature} failed with:`, confirmedTx.meta.err);
+            return bailTx(new Error(`Transaction ${signature} failed: ${JSON.stringify(confirmedTx.meta.err)}`));
+          }
+        }, options);
+
+        this.#logger.warn(`Transaction ${signature} confirmed manually`);
+      }
+    }, options);
+  }
+
   // wallet == userPubkey ???
   async addUser(walletAddress) {
     const userKey = new PublicKey(walletAddress);
@@ -145,7 +178,7 @@ export class PresaleContractAdapter {
       this.#program.programId
     );
 
-    await retry(async (bail) => {
+    await this.#safeContractCallWithRetry(async (bail) => {
       try {
         return await this.#program.methods
           .assignVerifiedUser(userKey)
@@ -230,7 +263,7 @@ export class PresaleContractAdapter {
       TOKEN_METADATA_PROGRAM_ID
     );
 
-    await retry(async (bail) => {
+    await this.#safeContractCallWithRetry(async (bail) => {
       try {
         return await this.#program.methods
           .createToken({
@@ -265,7 +298,7 @@ export class PresaleContractAdapter {
 
   // name: string, symbol: string, amount: number, receiver: string
   async #mintTokens({ name, symbol, amount, receiver }, pdas, userTokenAccount) {
-    await retry(async (bail) => {
+    await this.#safeContractCallWithRetry(async (bail) => {
       try {
         return await this.#program.methods
           .mintToken({
@@ -314,7 +347,7 @@ export class PresaleContractAdapter {
     // Solana on-chain use sec as timestamp
     const step = new BN(Math.floor(campaignData.step / 1000));
 
-    await retry(async (bail) => {
+    await this.#safeContractCallWithRetry(async (bail) => {
       try {
         return await this.#program.methods
           .createCampaign({
@@ -379,8 +412,7 @@ export class PresaleContractAdapter {
     // Solana on-chain use sec as timestamp
     const distributeAt = timestamp ? new BN(Math.floor(timestamp / 1000)) : null
 
-
-    await retry(async (bail) => {
+    await this.#safeContractCallWithRetry(async (bail) => {
       try {
         return await this.#program.methods
           .setStatus({
@@ -525,7 +557,7 @@ export class PresaleContractAdapter {
     const configData = await this.#vrf.account.networkState.fetch(config);
     const treasury = configData.config.treasury;
 
-    await retry(async (bail) => {
+    await this.#safeContractCallWithRetry(async (bail) => {
       try {
         return await this.#program.methods
           .calculateDistribution({

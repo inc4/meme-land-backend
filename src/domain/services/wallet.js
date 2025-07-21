@@ -19,8 +19,8 @@ export class WalletService {
     const userData = await this.#dataModel.create(data);
 
     this.#logger.debug('User created: ', {
-      referrer: this.#stringToSaveView(userData.referrer),
-      wallet: this.#stringToSaveView(userData.wallet),
+      referrer: this.#walletToSaveView(userData.referrer),
+      wallet: this.#walletToSaveView(userData.wallet),
       isAdmin: userData.isAdmin,
       createdAt: userData.createdAt
     });
@@ -51,7 +51,7 @@ export class WalletService {
     return (!!(resp && resp.modifiedCount)) ? { inviteCode } : null;
   }
 
-  #stringToSaveView(string) {
-    return string.substring(0, 4);
+  #walletToSaveView(wallet) {
+    return wallet.substring(0, 4);
   }
 }

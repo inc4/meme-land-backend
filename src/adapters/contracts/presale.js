@@ -151,12 +151,12 @@ export class PresaleContractAdapter {
           });
 
           if (!confirmedTx) {
-            this.#logger.warn(`Verifying manually [${txAttempt}/${txRetryAttempts}] retries. Transaction not yet confirmed...`);
+            this.#logger.warn(`Verifying manually ${txAttempt} retry. Transaction not yet confirmed...`);
             throw new Error('Transaction not yet found');
           }
 
           if (confirmedTx.meta && confirmedTx.meta.err) {
-            this.#logger.warn(`Transaction ${signature} failed with:`, confirmedTx.meta.err);
+            this.#logger.warn(`Transaction ${signature} failed with:`, { err: confirmedTx.meta.err });
             return bailTx(new Error(`Transaction ${signature} failed: ${JSON.stringify(confirmedTx.meta.err)}`));
           }
         }, options);

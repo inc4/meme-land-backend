@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "api-server": "node ./src/api/http/server.js",
+    "api-server": "npm rebuild && node ./src/api/http/server.js",
     "dev-api-server": "nodemon ./src/api/http/server.js",
     "register-admin": "node ./src/api/cmd/register-admin.js",
     "test": "echo \"Error: no test specified\" && exit 1"

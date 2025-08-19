@@ -6,6 +6,9 @@ WORKDIR /app
 # Copy package.json and package-lock.json
 COPY package*.json ./
 
+# Install build dependencies
+RUN apk add --no-cache build-base
+
 # Install dependencies
 RUN npm install
 

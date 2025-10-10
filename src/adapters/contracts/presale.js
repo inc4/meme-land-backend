@@ -58,6 +58,17 @@ export class PresaleContractAdapter {
     this.#handleEvents();
   }
 
+  async checkRpcHealth() {
+    try {
+      await this.#program.provider.connection.getLatestBlockhash(this.#anchorOptions.commitmentLevel);
+      this.#logger.debug('RPC node is healthy');
+      return true;
+    } catch (err) {
+      this.#logger.error('RPC node health check failed:', err);
+      return false;
+    }
+  }
+
 
   async waitForNextSlot() {
     const current = await this.#program.provider.connection.getSlot(this.#anchorOptions.commitmentLevel);
@@ -333,10 +344,10 @@ export class PresaleContractAdapter {
   //    tokenName : string;
   //    tokenSymbol: string;
   //    step: number; // in ms
-  //    price: number; 
+  //    price: number;
   //    minAmount: number;
-  //    maxAmount: number; 
-  //    tokenSupply: number; 
+  //    maxAmount: number;
+  //    tokenSupply: number;
   //    listingPrice: number;
   //    numberOfWallets: number;
   //    solTreasury: PublicKey;
